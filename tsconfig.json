@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "declaration": true,
+        "outDir": "./main",
+        "lib": ["ES2015", "dom"],
+        "target": "ES2015",
+        "strict": true,
+        "esModuleInterop": true,
+        "moduleResolution": "Node",
+        "skipLibCheck": true
+    },
+    "include": [
+        "./src/*"
+    ],
+    "exclude": ["node_modules", "main"]
+}

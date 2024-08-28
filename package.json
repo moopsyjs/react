@@ -1,0 +1,34 @@
+{
+  "name": "@moopsyjs/react",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./main/index.js",
+  "types": "./main/index.d.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rm -rf main/ && npm i && tsc -p tsconfig.json"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@moopsyjs/core": "^1.0.1",
+    "@types/ejson": "^2.2.0",
+    "@types/events": "^3.0.0",
+    "@types/react": "^18.0.17",
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
+    "@typescript-eslint/parser": "^6.20.0",
+    "axios": "^1.7.3",
+    "eslint": "^8.56.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "eslint-plugin-react": "^7.33.2",
+    "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "ejson": "^2.2.2",
+    "events": "^3.3.0",
+    "socket.io-client": "^4.7.1"
+  },
+  "peerDependencies": {
+    "react": "*"
+  }
+}
