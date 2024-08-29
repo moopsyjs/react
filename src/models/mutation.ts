@@ -3,7 +3,7 @@ import { MoopsyClient, UseMoopsyQueryRetValBase } from "./client";
 import { TimeoutError } from "./errors/timeout-error";
 import { isMoopsyError } from "../lib/is-moopsy-error";
 import { MutationCall } from "./mutation-call";
-import { TypedEventEmitterV3 } from "@moopsyjs/utils";
+import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
 
 export type ActiveCallType<Plug extends MoopsyBlueprintPlugType> = {
   mutationId:string,

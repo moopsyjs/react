@@ -3,7 +3,7 @@ import { MoopsyMutation } from "./mutation";
 import { TimeoutError } from "./errors/timeout-error";
 import { UseMoopsyQueryRetValBase } from "./client";
 import { isMoopsyError } from "../lib/is-moopsy-error";
-import { TypedEventEmitterV3 } from "@moopsyjs/utils";
+import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
 
 function generateMutationId (): string {
   return Math.random().toString();
