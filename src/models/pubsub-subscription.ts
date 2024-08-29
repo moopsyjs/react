@@ -1,7 +1,7 @@
 import { MoopsyRawClientToServerMessageEventEnum, MoopsySubscribeToTopicEventData, MoopsyTopicSpecTyping } from "@moopsyjs/core";
 import { MoopsyClient } from "./client";
 import { TransportStatus } from "./transports/base";
-import { TypedEventEmitterV3 } from "../lib/typed-event-emitter";
+import { TypedEventEmitterV3 } from "@moopsyjs/utils";
 
 export class PubSubSubscription<Typing extends MoopsyTopicSpecTyping>{
   public destroyed: boolean = false;

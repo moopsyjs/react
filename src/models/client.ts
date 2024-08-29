@@ -12,7 +12,7 @@ import { Queue } from "../lib/queue";
 import { TransportBase, TransportStatus } from "./transports/base";
 import { MutationCall } from "./mutation-call";
 import { HTTPTransport } from "./transports/http-transport";
-import { TypedEventEmitterV3 } from "../lib/typed-event-emitter";
+import { TypedEventEmitterV3 } from "@moopsyjs/utils";
 
 type MoopsyClientOpts = {
   socketUrl: string;
