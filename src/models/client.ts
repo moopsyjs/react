@@ -444,7 +444,7 @@ export class MoopsyClient {
     return Object.freeze(rv);
   };  
 
-  private createPubSubSubscription = <Typing extends MoopsyTopicSpecTyping>(options: MoopsySubscribeToTopicEventData): PubSubSubscription<Typing> => {
+  public createPubSubSubscription = <Typing extends MoopsyTopicSpecTyping>(options: MoopsySubscribeToTopicEventData): PubSubSubscription<Typing> => {
     if(options.topic in this.pubsubSubscriptions && this.pubsubSubscriptions[options.topic].destroyed === false) {
       this._debug(`[@MoopsyJS/React] createPubSubSubscription - reusing existing subscription for "${options.topic}"`);
       return this.pubsubSubscriptions[options.topic];
