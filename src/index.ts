@@ -1,5 +1,6 @@
 import { UseMoopsyQueryRetVal } from "./models/client";
 export {
+  AuthExtensionStatus,
   MoopsyClientAuthExtension,
   MoopsyClientAuthExtensionState,
   MoopsyClientAuthExtensionState as MoopsyAuthState

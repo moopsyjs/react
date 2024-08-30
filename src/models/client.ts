@@ -3,7 +3,7 @@ import EJSON from "ejson";
 import { MoopsyBlueprintConstsType, MoopsyBlueprintPlugType, MoopsyError, MoopsyPublishToTopicEventData, MoopsyRawClientToServerMessageEventEnum, MoopsyRawClientToServerMessageType, MoopsyRawServerToClientMessageEventType, MoopsySubscribeToTopicEventData, MoopsyTopicSpecConstsType, MoopsyTopicSpecTyping } from "@moopsyjs/core";
 import React, { useCallback, useEffect, useState } from "react";
 import { ActiveCallType, MoopsyMutation } from "./mutation";
-import { MoopsyClientAuthExtension, MoopsyClientAuthExtensionState } from "./client-extensions/auth-extension";
+import { MoopsyClientAuthExtension, AuthExtensionStatus } from "./client-extensions/auth-extension";
 import { PubSubSubscription } from "./pubsub-subscription";
 import type { Axios } from "axios";
 import { WebsocketTransport } from "./transports/websocket-transport";
@@ -203,7 +203,7 @@ export class MoopsyClient {
       this._debug("Flushing outbox...");
       try {
         this.flushingOutbox = true;
-        const isLoggedIn = this._authExtensionSlot?.state === MoopsyClientAuthExtensionState.loggedIn;
+        const isLoggedIn = this._authExtensionSlot?.status === AuthExtensionStatus.loggedIn;
         
         const outbox = this.outbox.flush(
           req => isLoggedIn || req.requireAuth !== true

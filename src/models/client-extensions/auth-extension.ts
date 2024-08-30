@@ -10,22 +10,23 @@ import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
 
 export type AutoLoginFunctionType<AS extends MoopsyAuthenticationSpec> = (() => Promise<AS["AuthRequestType"] | null>);
 
-export enum MoopsyClientAuthExtensionState {
+export enum AuthExtensionStatus {
   loggedIn = "loggedIn",
   loggingIn = "loggingIn",
   loggedOut = "loggedOut"
 }
+export { AuthExtensionStatus as MoopsyClientAuthExtensionState }; // Backwards compatibility for pre 1.0.3
 
 /**
  * MoopsyClientAuthExtension is provided as a built-in because of the way authentication is handled in Moopsy.
  */
 export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec> extends MoopsyClientExtensionBase{
-  public state: MoopsyClientAuthExtensionState = MoopsyClientAuthExtensionState.loggedOut;
+  public status: AuthExtensionStatus = AuthExtensionStatus.loggedOut;
   public readonly id: string = Math.random().toString();
   public readonly emitter = new TypedEventEmitterV3<{
-    [MoopsyClientAuthExtensionState.loggedOut]: null,
-    [MoopsyClientAuthExtensionState.loggingIn]: null,
-    [MoopsyClientAuthExtensionState.loggedIn]: AuthSpec["PublicAuthType"],
+    [AuthExtensionStatus.loggedOut]: null,
+    [AuthExtensionStatus.loggingIn]: null,
+    [AuthExtensionStatus.loggedIn]: AuthSpec["PublicAuthType"],
     ["auto-login-failure"]: Error
   }>;
   
@@ -35,26 +36,26 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
 
   public readonly logout = (): void => {
     this.currentAuth = null;
-    this.state = MoopsyClientAuthExtensionState.loggedOut;
-    this.emitter.emit(MoopsyClientAuthExtensionState.loggedOut, null);
+    this.status = AuthExtensionStatus.loggedOut;
+    this.emitter.emit(AuthExtensionStatus.loggedOut, null);
   };
 
   public readonly login = async (params: AuthSpec["AuthRequestType"]): Promise<void> => {
-    this.state = MoopsyClientAuthExtensionState.loggingIn;
+    this.status = AuthExtensionStatus.loggingIn;
     
     void this.client.awaitConnected();
 
     const promise = new Promise<void>((resolve, reject) => {
       const successHandler = () => {
         resolve();
-        this.state = MoopsyClientAuthExtensionState.loggedIn;
+        this.status = AuthExtensionStatus.loggedIn;
         this.client.incomingMessageEmitter.off(MoopsyRawServerToClientMessageEventEnum.AUTH_SUCCESS, successHandler);
       };
 
       const failureHandler = (err: Error) => {
         const error = isMoopsyError(err) ? new MoopsyError(err.code, err.error, err.description) : new Error(err.message);
         reject(error);
-        this.state = MoopsyClientAuthExtensionState.loggedOut;
+        this.status = AuthExtensionStatus.loggedOut;
         this.client.incomingMessageEmitter.off(MoopsyRawServerToClientMessageEventEnum.AUTH_ERROR, failureHandler);
       };
 
@@ -75,8 +76,8 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
 
   public readonly handleLoginEvent = (auth: AuthSpec["PublicAuthType"]): void => {
     this.currentAuth = auth;
-    this.state = MoopsyClientAuthExtensionState.loggedIn;
-    this.emitter.emit(MoopsyClientAuthExtensionState.loggedIn, auth);
+    this.status = AuthExtensionStatus.loggedIn;
+    this.emitter.emit(AuthExtensionStatus.loggedIn, auth);
     this.client._emitter.emit("auth-extension/logged-in", undefined);
   };
 
@@ -126,22 +127,22 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
     }
   };
 
-  public readonly useAuthStatus = (): MoopsyClientAuthExtensionState => {
-    const [v,s] = React.useState<MoopsyClientAuthExtensionState>(this.state);
+  public readonly useAuthStatus = (): AuthExtensionStatus => {
+    const [v,s] = React.useState<AuthExtensionStatus>(this.status);
 
     React.useEffect(() => {
-      const loginHandler = () => s(MoopsyClientAuthExtensionState.loggedIn);
-      const loggingInHandler = () => s(MoopsyClientAuthExtensionState.loggingIn);
-      const logoutHandler = () => s(MoopsyClientAuthExtensionState.loggedOut);
+      const loginHandler = () => s(AuthExtensionStatus.loggedIn);
+      const loggingInHandler = () => s(AuthExtensionStatus.loggingIn);
+      const logoutHandler = () => s(AuthExtensionStatus.loggedOut);
 
-      this.emitter.on(MoopsyClientAuthExtensionState.loggedIn, loginHandler);
-      this.emitter.on(MoopsyClientAuthExtensionState.loggingIn, loggingInHandler);
-      this.emitter.on(MoopsyClientAuthExtensionState.loggedOut, logoutHandler);
+      this.emitter.on(AuthExtensionStatus.loggedIn, loginHandler);
+      this.emitter.on(AuthExtensionStatus.loggingIn, loggingInHandler);
+      this.emitter.on(AuthExtensionStatus.loggedOut, logoutHandler);
 
       return () => {
-        this.emitter.off(MoopsyClientAuthExtensionState.loggedIn, loginHandler);
-        this.emitter.off(MoopsyClientAuthExtensionState.loggingIn, loggingInHandler);
-        this.emitter.off(MoopsyClientAuthExtensionState.loggedOut, logoutHandler);
+        this.emitter.off(AuthExtensionStatus.loggedIn, loginHandler);
+        this.emitter.off(AuthExtensionStatus.loggingIn, loggingInHandler);
+        this.emitter.off(AuthExtensionStatus.loggedOut, logoutHandler);
       };
     }, []);
 
@@ -155,12 +156,12 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
       const loginHandler = (a:AuthSpec["PublicAuthType"]) => s(a);
       const logoutHandler = () => s(null);
 
-      this.emitter.on(MoopsyClientAuthExtensionState.loggedIn, loginHandler);
-      this.emitter.on(MoopsyClientAuthExtensionState.loggedOut, logoutHandler);
+      this.emitter.on(AuthExtensionStatus.loggedIn, loginHandler);
+      this.emitter.on(AuthExtensionStatus.loggedOut, logoutHandler);
 
       return () => {
-        this.emitter.off(MoopsyClientAuthExtensionState.loggedIn, loginHandler);
-        this.emitter.off(MoopsyClientAuthExtensionState.loggedOut, logoutHandler);  
+        this.emitter.off(AuthExtensionStatus.loggedIn, loginHandler);
+        this.emitter.off(AuthExtensionStatus.loggedOut, logoutHandler);  
       };
     }, []);
 
