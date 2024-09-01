@@ -60,6 +60,10 @@ export type UseMoopsyQueryRetVal<Plug extends MoopsyBlueprintPlugType> = UseMoop
 type UseMoopsyMutationOptionsType = {
   publishActiveCallsState?: boolean,
   querySideEffects?: Array<UseMoopsyQueryRetVal<any> | null>,
+  /**
+   * Default 10000 (10 seconds)
+   */
+  timeout?: number,
 }
 
 export class MoopsyClient {
@@ -286,6 +290,7 @@ export class MoopsyClient {
         plug,
         {
           querySideEffects: options?.querySideEffects ?? [],
+          timeout: options?.timeout ?? 10000
         }
       )
     );
