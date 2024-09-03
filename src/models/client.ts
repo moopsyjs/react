@@ -346,11 +346,12 @@ export class MoopsyClient {
   public useQuery = <Plug extends MoopsyBlueprintPlugType>(
     MoopsyModule:MoopsyBlueprintConstsType,
     params:Plug["params"],
+    options?: UseMoopsyMutationOptionsType
   ) : UseMoopsyQueryRetVal<Plug> => {
     const paramsHash = React.useMemo(() => JSON.stringify(params), [params]);
     const [isLoading, setIsLoading] = React.useState<boolean>(true);
     const [data, setData] = React.useState<Plug["response"] | void>();
-    const { error, call } = this.useMutation<Plug>(MoopsyModule);
+    const { error, call } = this.useMutation<Plug>(MoopsyModule, options);
 
     const refresh = React.useCallback((opts?: MoopsyQueryRefreshOpts) => {
       if(opts?.subtle !== true) {
