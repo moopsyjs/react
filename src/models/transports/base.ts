@@ -88,13 +88,19 @@ export abstract class TransportBase {
     this.reconnectPending = true;
 
     while(true) {
-      const { data } = await this.client.axios.get(`${this.baseURL}/api/status`);
+      try {
+        const { data } = await this.client.axios.get(`${this.baseURL}/api/status`);
       
-      if(data === "OK") {
-        break;
+        if(data === "OK") {
+          break;
+        }
       }
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      catch {
+        // Ignore errors
+      }
+      finally {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
     }
 
     this.v("Attempting to reconnect...");
