@@ -29,7 +29,7 @@ export class WebsocketTransport extends TransportBase {
     }
   };
 
-  readonly disconnect = (): void => {
+  public readonly disconnect = (): void => {
     this.v("Disconnecting...");
 
     this.failActiveCalls();

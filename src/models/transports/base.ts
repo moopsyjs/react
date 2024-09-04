@@ -1,3 +1,4 @@
+/* eslint-disable no-constant-condition */
 import EJSON from "ejson";
 import { EventEmitter } from "events";
 import { MoopsyRawServerToClientMessageType } from "@moopsyjs/core";
@@ -79,20 +80,25 @@ export abstract class TransportBase {
     this.client.incomingMessageEmitter.emit(data.event, data.data);
   };    
 
-  public readonly requestReconnect = (): void => {
+  public readonly requestReconnect = async (): Promise<void> => {
     if(this.reconnectPending === true) {
       return;
     }
 
-    const delay = Math.min(2500, this.failureCount * 500);
-
-    this.v(`Will reconnect in ${delay}ms...`);
     this.reconnectPending = true;
 
-    setTimeout(() => {
-      this.v("Attempting to reconnect...");
-      void this.connect();
-    }, delay);
+    while(true) {
+      const { data } = await this.client.axios.get(`${this.baseURL}/api/status`);
+      
+      if(data === "OK") {
+        break;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    this.v("Attempting to reconnect...");
+    void this.connect();
   };    
 
   public readonly handleConnectionFailure = (): void => {
@@ -104,29 +110,12 @@ export abstract class TransportBase {
     }
 
     if(this.failureCount > 3 && this.type === "websocket") {
-      this.client.axios.get(`${this.baseURL}/api/status`)
-        .then((res) => {
-          if(res.data === "OK") {
-          // Server is reachable via HTTP, so terminate this Websocket Transport and switch to HTTP
-            this.terminate();
-            this.onRequestSwitchTransport("http");
-          }
-          else {
-            // Something's wrong, let's reconnect in a bit
-            setTimeout(() => {
-              this.requestReconnect();
-            }, 1000);
-          }
-        })
-        .catch(() => {
-          // Something's wrong, let's reconnect in a bit
-          setTimeout(() => {
-            this.requestReconnect();
-          }, 1000);
-        });
+      // Terminate this Websocket Transport and switch to HTTP
+      this.terminate();
+      this.onRequestSwitchTransport("http");
     }
     else {
-      this.requestReconnect();
+      void this.requestReconnect();
     }
   };
 
