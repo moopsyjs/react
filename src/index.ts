@@ -5,7 +5,7 @@ export {
   MoopsyClientAuthExtensionState,
   MoopsyClientAuthExtensionState as MoopsyAuthState
 } from "./models/client-extensions/auth-extension";
-export { MoopsyClient, type UseMoopsyQueryRetVal, type UseMoopsyMutationRetVal } from "./models/client";
+export { MoopsyClient, type UseMoopsyQueryRetVal, type UseMoopsyMutationRetVal, type UseMoopsyMutationOptionsType } from "./models/client";
 export type UseMoopsyQueryRetValAny = UseMoopsyQueryRetVal<any>;
 export type AnyMoopsyQuery = UseMoopsyQueryRetVal<any>;
 export type { WebsocketTransport } from "./models/transports/websocket-transport";

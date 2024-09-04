@@ -57,7 +57,7 @@ export type UseMoopsyQueryRetVal<Plug extends MoopsyBlueprintPlugType> = UseMoop
   { isLoading: false, error: null, isError: false, data: Plug["response"] }
 )
 
-type UseMoopsyMutationOptionsType = {
+export type UseMoopsyMutationOptionsType = {
   publishActiveCallsState?: boolean,
   querySideEffects?: Array<UseMoopsyQueryRetVal<any> | null>,
   /**
