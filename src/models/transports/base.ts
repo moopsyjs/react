@@ -152,7 +152,10 @@ export abstract class TransportBase {
       
       if(this.lastPing.valueOf() < (Date.now() - 10000)) {
         this.handleConnectionFailure();
-      }      
+      }
+      else {
+        this.v(`Connection is stable, last ping was ${Date.now() - this.lastPing.valueOf()}ms ago.`);
+      }
     }, 5000);
   };
 

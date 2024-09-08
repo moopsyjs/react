@@ -221,14 +221,16 @@ export class MoopsyClient {
           req => isLoggedIn || req.requireAuth !== true
         );
 
+        this._debug(`Flushing ${outbox.length} messages...`);
+
         for(const message of outbox) {
           const stringified = EJSON.stringify(message.message);
           this.transport.send(stringified);
           await new Promise((resolve) => setTimeout(resolve, 0)); // Defer
         }
       }
-      catch {
-        // Ignore
+      catch (err) {
+        this._debug("Error flushing outbox", err);
       }
 
       this.flushingOutbox = false;
