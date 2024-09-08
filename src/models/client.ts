@@ -150,6 +150,14 @@ export class MoopsyClient {
     }
   };
 
+  public readonly requestReconnect = (): void => {
+    if(this.getTransportStatus() === TransportStatus.connected) {
+      return;
+    }
+
+    void this.transport.requestReconnect();
+  };
+
   public readonly use = {
     transportStatus: () => {
       const [status, setStatus] = React.useState<TransportStatus>(this.transport.status);

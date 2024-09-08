@@ -34,6 +34,7 @@ export abstract class TransportBase {
   public failureCount: number = 0;
   public reconnectPending: boolean = false;
   public terminated: boolean = false;
+  public lastReconnectAttempt: Date | null = null;
 
   private stabilityCheckInterval: number | null = null;
 
@@ -82,10 +83,16 @@ export abstract class TransportBase {
 
   public readonly requestReconnect = async (): Promise<void> => {
     if(this.reconnectPending === true) {
-      return;
+      if(this.lastReconnectAttempt != null && this.lastReconnectAttempt < new Date(Date.now() - 30000)) {
+        this.v("Reconnect has been pending for over 30 seconds, going to try reconnecting again.");
+      }
+      else {
+        return;
+      }
     }
 
     this.reconnectPending = true;
+    this.lastReconnectAttempt = new Date();
 
     while(true) {
       try {
