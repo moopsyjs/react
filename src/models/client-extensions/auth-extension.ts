@@ -21,7 +21,7 @@ export { AuthExtensionStatus as MoopsyClientAuthExtensionState }; // Backwards c
  * MoopsyClientAuthExtension is provided as a built-in because of the way authentication is handled in Moopsy.
  */
 export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec> extends MoopsyClientExtensionBase{
-  public status: AuthExtensionStatus = AuthExtensionStatus.loggedOut;
+  public status: AuthExtensionStatus;
   public readonly id: string = Math.random().toString();
   public readonly emitter = new TypedEventEmitterV3<{
     [AuthExtensionStatus.loggedOut]: null,
@@ -191,9 +191,14 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
     this.client._authExtensionSlot = this;
 
     this.autoLoginFunction = opts.autoLoginFunction;
+    this.status = this.autoLoginFunction == null ? AuthExtensionStatus.loggedOut : AuthExtensionStatus.loggingIn;
 
     this.client.incomingMessageEmitter.on(MoopsyRawServerToClientMessageEventEnum.AUTH_SUCCESS, this.handleLoginEvent);
     this.client.on.transportStatusChange(this.handleTransportStatusChange);
+
+    if(this.client.getTransportStatus() === TransportStatus.connected) {
+      this.attemptAutoLogin();
+    }
   }
 
   public on = {
