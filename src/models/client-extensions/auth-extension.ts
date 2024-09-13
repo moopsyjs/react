@@ -36,26 +36,30 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
 
   public readonly logout = (): void => {
     this.currentAuth = null;
-    this.status = AuthExtensionStatus.loggedOut;
-    this.emitter.emit(AuthExtensionStatus.loggedOut, null);
+    this.updateStatus(AuthExtensionStatus.loggedOut);
+  };
+
+  private readonly updateStatus = (status: AuthExtensionStatus): void => {
+    this.status = status;
+    this.emitter.emit(status, null);
   };
 
   public readonly login = async (params: AuthSpec["AuthRequestType"]): Promise<void> => {
-    this.status = AuthExtensionStatus.loggingIn;
+    this.updateStatus(AuthExtensionStatus.loggingIn);
     
     void this.client.awaitConnected();
 
     const promise = new Promise<void>((resolve, reject) => {
       const successHandler = () => {
         resolve();
-        this.status = AuthExtensionStatus.loggedIn;
+        this.updateStatus(AuthExtensionStatus.loggedIn);
         this.client.incomingMessageEmitter.off(MoopsyRawServerToClientMessageEventEnum.AUTH_SUCCESS, successHandler);
       };
 
       const failureHandler = (err: Error) => {
         const error = isMoopsyError(err) ? new MoopsyError(err.code, err.error, err.description) : new Error(err.message);
         reject(error);
-        this.status = AuthExtensionStatus.loggedOut;
+        this.updateStatus(AuthExtensionStatus.loggedOut);
         this.client.incomingMessageEmitter.off(MoopsyRawServerToClientMessageEventEnum.AUTH_ERROR, failureHandler);
       };
 
@@ -76,9 +80,14 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
 
   public readonly handleLoginEvent = (auth: AuthSpec["PublicAuthType"]): void => {
     this.currentAuth = auth;
-    this.status = AuthExtensionStatus.loggedIn;
-    this.emitter.emit(AuthExtensionStatus.loggedIn, auth);
+    this.updateStatus(AuthExtensionStatus.loggedIn);
     this.client._emitter.emit("auth-extension/logged-in", undefined);
+  };
+
+  private readonly handleAutoLoginFailure = (err: Error): void => {
+    this.emitter.emit("auto-login-failure", err);
+    this.updateStatus(AuthExtensionStatus.loggedOut);
+    this._isAttemptingAutoLogin = false;
   };
 
   private readonly attemptAutoLogin = (): void => {
@@ -98,20 +107,19 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
         
         if(res != null) {
           this.login(res).then(this.client.handleOutboxFlushRequest).catch((err) => {
-            this.emitter.emit("auto-login-failure", err);
+            this.handleAutoLoginFailure(err);
           });
         }
       }
       catch(err) {
-        this.emitter.emit("auto-login-failure", err as Error);
+        this.handleAutoLoginFailure(err as Error);
       }
     }, 10000)
       .then(() => {
         this._isAttemptingAutoLogin = false;
       })
       .catch(() => {
-        this.emitter.emit("auto-login-failure", new TimeoutError("auto-login"));
-        this._isAttemptingAutoLogin = false;
+        this.handleAutoLoginFailure(new TimeoutError("auto-login"));
       })
     ;
   };
