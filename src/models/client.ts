@@ -2,7 +2,7 @@ import EJSON from "ejson";
 
 import { MoopsyBlueprintConstsType, MoopsyBlueprintPlugType, MoopsyError, MoopsyPublishToTopicEventData, MoopsyRawClientToServerMessageEventEnum, MoopsyRawClientToServerMessageType, MoopsyRawServerToClientMessageEventType, MoopsySubscribeToTopicEventData, MoopsyTopicSpecConstsType, MoopsyTopicSpecTyping } from "@moopsyjs/core";
 import React, { useCallback, useEffect, useState } from "react";
-import { ActiveCallType, MoopsyMutation } from "./mutation";
+import { ActiveCallType, generateMutationId, MoopsyMutation } from "./mutation";
 import { MoopsyClientAuthExtension, AuthExtensionStatus } from "./client-extensions/auth-extension";
 import { PubSubSubscription } from "./pubsub-subscription";
 import type { Axios } from "axios";
@@ -13,6 +13,7 @@ import { TransportBase, TransportStatus } from "./transports/base";
 import { MutationCall } from "./mutation-call";
 import { HTTPTransport } from "./transports/http-transport";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
+import { UseMoopsyQueryRetValAny } from "..";
 
 type MoopsyClientOpts = {
   socketUrl: string;
@@ -69,6 +70,7 @@ export type UseMoopsyMutationOptionsType = {
 export class MoopsyClient {
   private transport: TransportBase;
   private pubsubSubscriptions: {[k: string]: PubSubSubscription<any>} = {};
+  private activeQueries: {[k: string]: UseMoopsyQueryRetValAny} = {};
 
   public errorOutFn?: ((details: string, error: Error) => void) | null;
   // TODO: Improve typing
@@ -80,6 +82,7 @@ export class MoopsyClient {
   public socketUrl: string;
   public axios: Axios;
   public _closed: boolean = false;
+  
   
   public _debug = (...args:any[]) => {
     if(this.debug === true) {
@@ -358,6 +361,7 @@ export class MoopsyClient {
     params:Plug["params"],
     options?: UseMoopsyMutationOptionsType
   ) : UseMoopsyQueryRetVal<Plug> => {
+    const queryId = React.useMemo(() => generateMutationId(), []);
     const paramsHash = React.useMemo(() => JSON.stringify(params), [params]);
     const [isLoading, setIsLoading] = React.useState<boolean>(true);
     const [data, setData] = React.useState<Plug["response"] | void>();
@@ -393,9 +397,16 @@ export class MoopsyClient {
           setData(d);
         },
       }
-    }), [isLoading, error, data, refresh, MoopsyModule.Endpoint, params, setData]);
+    }), [isLoading, error, data, refresh, MoopsyModule.Endpoint, params, setData]) as UseMoopsyQueryRetVal<Plug>;
+    this.activeQueries[queryId] = result;
 
-    return result as UseMoopsyQueryRetVal<Plug>;
+    React.useEffect(() => {
+      return () => {
+        delete this.activeQueries[queryId];
+      };
+    }, []);
+
+    return result;
   };
 
   public useQueryWithTransform = <Plug extends MoopsyBlueprintPlugType>(
@@ -572,6 +583,17 @@ export class MoopsyClient {
       };
 
       this.transport.on.statusChange(h);
+    }
+  };
+
+  /**
+   * Refreshes all queries currently mounted an active on the client. Useful when the app
+   * comes back from the background, if authentication state changes, etc.
+   */
+  public readonly refreshAllQueries = (params: MoopsyQueryRefreshOpts = {}): void => {
+    for(const queryId in this.activeQueries) {
+      const query = this.activeQueries[queryId];
+      void query.refresh(params);
     }
   };
 }
