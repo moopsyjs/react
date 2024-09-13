@@ -95,6 +95,8 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
       return;
     }
 
+    this.client._debug("[AuthExtension] Attempting auto-login");
+
     createTimeout(async (cancel) => {
       try {
         if(this.autoLoginFunction == null) {
@@ -109,6 +111,9 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
           this.login(res).then(this.client.handleOutboxFlushRequest).catch((err) => {
             this.handleAutoLoginFailure(err);
           });
+        }
+        else {
+          this.handleAutoLoginFailure(new Error("Auto login function returned null"));
         }
       }
       catch(err) {
