@@ -34,6 +34,10 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
   private currentAuth: AuthSpec["PublicAuthType"] | null = null;
   private readonly autoLoginFunction: AutoLoginFunctionType<AuthSpec> | null;
 
+  private readonly _debug = (...args:any[]): void => {
+    this.client._debug("[AuthExtension]", ...args);
+  };
+
   public readonly logout = (): void => {
     this.currentAuth = null;
     this.updateStatus(AuthExtensionStatus.loggedOut);
@@ -81,10 +85,12 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
   public readonly handleLoginEvent = (auth: AuthSpec["PublicAuthType"]): void => {
     this.currentAuth = auth;
     this.updateStatus(AuthExtensionStatus.loggedIn);
+    this.emitter.emit(AuthExtensionStatus.loggedIn, auth);
     this.client._emitter.emit("auth-extension/logged-in", undefined);
   };
 
   private readonly handleAutoLoginFailure = (err: Error): void => {
+    this._debug("Auto login failed", err);
     this.emitter.emit("auto-login-failure", err);
     this.updateStatus(AuthExtensionStatus.loggedOut);
     this._isAttemptingAutoLogin = false;
@@ -95,12 +101,12 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
       return;
     }
 
-    this.client._debug("[AuthExtension] Attempting auto-login");
+    this._debug("Attempting auto-login");
 
     createTimeout(async (cancel) => {
       try {
         if(this.autoLoginFunction == null) {
-          return;
+          return this._debug("No auto-login function set");
         }
         
         const res = await this.autoLoginFunction();
@@ -108,7 +114,10 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
         cancel();
         
         if(res != null) {
-          this.login(res).then(this.client.handleOutboxFlushRequest).catch((err) => {
+          this.login(res).then(() => {
+            this._debug("Auto login successful");
+            void this.client.handleOutboxFlushRequest();
+          }).catch((err) => {
             this.handleAutoLoginFailure(err);
           });
         }
