@@ -43,9 +43,10 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
     this.updateStatus(AuthExtensionStatus.loggedOut);
   };
 
-  private readonly updateStatus = (status: AuthExtensionStatus): void => {
+  private readonly updateStatus = (status: AuthExtensionStatus, data: any = null): void => {
     this.status = status;
-    this.emitter.emit(status, null);
+    this.emitter.emit(status, data);
+    this._debug("Status updated to", status);
   };
 
   public readonly login = async (params: AuthSpec["AuthRequestType"]): Promise<void> => {
@@ -84,8 +85,7 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
 
   public readonly handleLoginEvent = (auth: AuthSpec["PublicAuthType"]): void => {
     this.currentAuth = auth;
-    this.updateStatus(AuthExtensionStatus.loggedIn);
-    this.emitter.emit(AuthExtensionStatus.loggedIn, auth);
+    this.updateStatus(AuthExtensionStatus.loggedIn, auth);
     this.client._emitter.emit("auth-extension/logged-in", undefined);
   };
 
