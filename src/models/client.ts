@@ -215,7 +215,7 @@ export class MoopsyClient {
       this.flushingOutbox !== true // Not already flushing
       && this.transport.status === TransportStatus.connected // Connected
     ) {
-      this._debug("Flushing outbox...");
+      this._debug("Flushing outbox...", { authExtensionStatus: this._authExtensionSlot?.status });
       try {
         this.flushingOutbox = true;
         const isLoggedIn = this._authExtensionSlot?.status === AuthExtensionStatus.loggedIn;

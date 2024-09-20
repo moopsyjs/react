@@ -1,26 +1,26 @@
 export class Queue<T> {
-  _q: T[] = [];
-  _attemptFlushHandler: () => void;
+  private _q: T[] = [];
+  private _attemptFlushHandler: () => void;
 
-  constructor(attemptFlushHandler: () => void) {
+  public constructor(attemptFlushHandler: () => void) {
     this._attemptFlushHandler = attemptFlushHandler;
   }
 
-  push = (v:T) => {
+  public readonly push = (v:T) => {
     this._q.push(v);
     this._attemptFlushHandler();
   };
 
-  flush = (filterFn?: (p:T) => boolean): T[] => {
+  public readonly flush = (filterFn?: (p:T) => boolean): T[] => {
     const spliced: T[] = [];
 
-    this._q.forEach((item, index) => {
+    for(const item of this._q) {
       if(filterFn == null || filterFn(item)) {
         spliced.push(
-          this._q.splice(index, 1)[0]
+          ...this._q.splice(this._q.indexOf(item), 1)
         );
       }
-    });
+    }
 
     return spliced;
   };
