@@ -111,13 +111,14 @@ export class MoopsyClient {
     this.errorOutFn = opts.errorOutFn ?? null;
 
     setInterval(() => {
-      this.send({
-        message: {
-          event: "ping",
-          data: null
-        },
-        requireAuth: false
-      });
+      if(this.transport.status === TransportStatus.connected) {
+        this.transport.send(
+          JSON.stringify({
+            event: "ping",
+            data: null
+          })
+        );
+      }
     }, 5000);
 
     this.setupTransport(this.transport);

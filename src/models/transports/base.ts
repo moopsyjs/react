@@ -148,9 +148,7 @@ export abstract class TransportBase {
       clearInterval(this.stabilityCheckInterval);
     }
 
-    this.stabilityCheckInterval = setInterval(() => {
-      this.v("Checking stability...");
-      
+    this.stabilityCheckInterval = setInterval(() => {      
       if(this.lastPing.valueOf() < (Date.now() - 10000)) {
         this.handleConnectionFailure();
       }
