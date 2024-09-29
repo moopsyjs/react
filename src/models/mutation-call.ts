@@ -4,6 +4,7 @@ import { TimeoutError } from "./errors/timeout-error";
 import { UseMoopsyQueryRetValBase } from "./client";
 import { isMoopsyError } from "../lib/is-moopsy-error";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
+import { MoopsyRequest } from "./request";
 
 function generateMutationId (): string {
   return Math.random().toString();
@@ -26,6 +27,15 @@ export class MutationCall<Plug extends MoopsyBlueprintPlugType>{
     response: Plug["response"],
     error: MoopsyError
   }>();
+  private _called: boolean = false;
+
+  public get called (): boolean {
+    return this._called;
+  }
+
+  private set called (value: boolean) {
+    this._called = value;
+  }
   
   public constructor(private readonly mutation: MoopsyMutation<Plug>) {
     this.callId = generateMutationId();
@@ -67,6 +77,12 @@ export class MutationCall<Plug extends MoopsyBlueprintPlugType>{
   };
 
   public readonly call = (params: Plug["params"]): typeof this => {
+    if(this.called) {
+      throw new Error("MutationCall.call() was called more than once.");
+    }
+
+    this.called = true;
+
     const sideEffects = determineSideEffects(this.mutation.querySideEffects);
 
     const message: MoopsyCallType = { 
@@ -92,13 +108,12 @@ export class MutationCall<Plug extends MoopsyBlueprintPlugType>{
     this.onSuccess(makeInactive);
     this.onFailure(makeInactive);
 
-    this.mutation.client.send({
-      message: {
+    this.mutation.client.send(
+      new MoopsyRequest({
         event: "call",
         data: message
-      },
-      requireAuth: this.mutation.plug.isPublic !== true
-    });   
+      }, this.mutation.plug.isPublic !== true, !this.mutation.isQuery)
+    );
     
     return this;
   };

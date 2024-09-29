@@ -1,7 +1,7 @@
 import EJSON from "ejson";
 
-import { MoopsyBlueprintConstsType, MoopsyBlueprintPlugType, MoopsyError, MoopsyPublishToTopicEventData, MoopsyRawClientToServerMessageEventEnum, MoopsyRawClientToServerMessageType, MoopsyRawServerToClientMessageEventType, MoopsySubscribeToTopicEventData, MoopsyTopicSpecConstsType, MoopsyTopicSpecTyping } from "@moopsyjs/core";
-import React, { useCallback, useEffect, useState } from "react";
+import { MoopsyBlueprintConstsType, MoopsyBlueprintPlugType, MoopsyError, MoopsyPublishToTopicEventData, MoopsyRawClientToServerMessageEventEnum, MoopsyRawServerToClientMessageEventType, MoopsySubscribeToTopicEventData, MoopsyTopicSpecConstsType, MoopsyTopicSpecTyping } from "@moopsyjs/core";
+import React from "react";
 import { ActiveCallType, generateMutationId, MoopsyMutation } from "./mutation";
 import { MoopsyClientAuthExtension, AuthExtensionStatus } from "./client-extensions/auth-extension";
 import { PubSubSubscription } from "./pubsub-subscription";
@@ -251,15 +251,18 @@ export class MoopsyClient {
 
   private outbox = new Queue<MoopsyRequest>(this.handleOutboxFlushRequest);
 
-
-  public send = (params: {
-    message: MoopsyRawClientToServerMessageType,
-    requireAuth: boolean
-  }) => {
-    this._debug("[send/requested] " + params.message.event + (params.message.event === "call" ? " " + params.message.data.method : ""));
-    this.outbox.push(
-      new MoopsyRequest(params.message, params.requireAuth)
+  /**
+   * Clears any requests from outbox that should not survive reconnection
+   */
+  public readonly clearOutboxBeforeReconnection = (): void => {
+    this.outbox.flush(
+      req => req.surviveReconnection !== true
     );
+  };
+
+  public send = (params: MoopsyRequest) => {
+    this._debug("[send/requested] " + params.message.event + (params.message.event === "call" ? " " + params.message.data.method : ""));
+    this.outbox.push(params);
   };
 
   private readonly validatePlug = (plug: MoopsyBlueprintConstsType) => {
@@ -295,7 +298,7 @@ export class MoopsyClient {
   /**
    * Returns a MoopsyMutation class instance
    */
-  public useStaticMutation<Plug extends MoopsyBlueprintPlugType>(plug: MoopsyBlueprintConstsType, options?:UseMoopsyMutationOptionsType): MoopsyMutation<Plug> {
+  public useStaticMutation<Plug extends MoopsyBlueprintPlugType>(plug: MoopsyBlueprintConstsType, isQuery: boolean, options?:UseMoopsyMutationOptionsType): MoopsyMutation<Plug> {
     this.validatePlug(plug);
 
     const ref = React.useRef(
@@ -305,7 +308,8 @@ export class MoopsyClient {
         {
           querySideEffects: options?.querySideEffects ?? [],
           timeout: options?.timeout ?? 10000
-        }
+        },
+        isQuery
       )
     );
 
@@ -353,7 +357,7 @@ export class MoopsyClient {
 
   public useMutation = <Plug extends MoopsyBlueprintPlugType>(plug: MoopsyBlueprintConstsType, options?:UseMoopsyMutationOptionsType): UseMoopsyMutationRetVal<Plug> => {
     this.validateQuerySideEffects(options?.querySideEffects ?? null);
-    const mutation = this.useStaticMutation<Plug>(plug, options);
+    const mutation = this.useStaticMutation<Plug>(plug, false, options);
     return this._useReactiveMutation(mutation);
   };
 
@@ -366,7 +370,8 @@ export class MoopsyClient {
     const paramsHash = React.useMemo(() => JSON.stringify(params), [params]);
     const [isLoading, setIsLoading] = React.useState<boolean>(true);
     const [data, setData] = React.useState<Plug["response"] | void>();
-    const { error, call } = this.useMutation<Plug>(MoopsyModule, options);
+    const mutation = this.useStaticMutation<Plug>(MoopsyModule, true, options);
+    const { error, call } = this._useReactiveMutation(mutation);
 
     const refresh = React.useCallback((opts?: MoopsyQueryRefreshOpts) => {
       if(opts?.subtle !== true) {
@@ -409,68 +414,6 @@ export class MoopsyClient {
 
     return result;
   };
-
-  public useQueryWithTransform = <Plug extends MoopsyBlueprintPlugType>(
-    MoopsyModule:MoopsyBlueprintConstsType,
-    params:Plug["params"],
-    transformFn: (data: Plug["response"]) => Promise<Plug["response"]>,
-    opts?: {
-      dependencies?:Array<any>,
-    }
-  ) : UseMoopsyQueryRetVal<Plug> => {
-    const [data, setData] = useState<Plug["response"] | void>();
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [error, setError] = useState<MoopsyError | null>(null);
-    const mutation = this.useMutation<Plug>(MoopsyModule);
-
-    const onQueryError = (error: MoopsyError) => {
-      console.error("[@moopsyjs/react] Error calling query", MoopsyModule, params, error);
-      setError(error ?? new MoopsyError(0, "No Error Specified"));
-      setIsLoading(false);
-    };
-
-    const onDataAvailable = useCallback(async (data:Plug["response"]): Promise<void> => {
-      const transformed = await transformFn(data);
-      setData(transformed);
-    }, [transformFn, setData]);
-
-    const performMutation = useCallback((p: Plug["params"]) => {
-      setIsLoading(true);
-      return new Promise((resolve) => {
-        mutation.call(p).then(async (response: Plug["response"]) => {
-          await onDataAvailable(response);
-          setIsLoading(false);
-          resolve(response);
-        }).catch(onQueryError);
-      });
-    }, [mutation, setIsLoading, onDataAvailable]);
-    
-    const refresh = useCallback(() => performMutation(params), [performMutation, params]);
-    const refreshWithParams = useCallback((newParams:Plug["params"]) => performMutation(newParams), [performMutation]);
-
-    useEffect(() => {
-      void refresh();
-      return () => {};
-    }, opts?.dependencies ?? []);
-
-    const rv: UseMoopsyQueryRetVal<Plug> = {
-      isLoading,
-      refresh,
-      refreshWithParams,
-      data,
-      error,
-      isError: error !== null,
-      _: {
-        endpoint:MoopsyModule.Endpoint,
-        params:params,
-        onSideEffectResult:(d:Plug["response"]) => {
-          void onDataAvailable(d);
-        },
-      }
-    } as UseMoopsyQueryRetVal<Plug>;
-
-    return Object.freeze(rv);
-  };  
 
   public createPubSubSubscription = <Typing extends MoopsyTopicSpecTyping>(options: MoopsySubscribeToTopicEventData): PubSubSubscription<Typing> => {
     if(options.topic in this.pubsubSubscriptions && this.pubsubSubscriptions[options.topic].destroyed === false) {
@@ -560,13 +503,12 @@ export class MoopsyClient {
         data
       };
 
-      this.send({
-        message: {
+      this.send(
+        new MoopsyRequest({
           event: MoopsyRawClientToServerMessageEventEnum.PUBLISH_TO_TOPIC,
           data: publicationMessage
-        },
-        requireAuth: true // TODO should be dynamic
-      });
+        }, true, true)
+      );
     };
 
     return { publish };

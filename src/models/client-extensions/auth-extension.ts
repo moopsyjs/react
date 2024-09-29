@@ -7,6 +7,7 @@ import { TimeoutError } from "../errors/timeout-error";
 import { isMoopsyError } from "../../lib/is-moopsy-error";
 import { TransportStatus } from "../transports/base";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
+import { MoopsyRequest } from "../request";
 
 export type AutoLoginFunctionType<AS extends MoopsyAuthenticationSpec> = (() => Promise<AS["AuthRequestType"] | null>);
 
@@ -71,13 +72,12 @@ export class MoopsyClientAuthExtension<AuthSpec extends MoopsyAuthenticationSpec
       this.client.incomingMessageEmitter.on(MoopsyRawServerToClientMessageEventEnum.AUTH_ERROR, failureHandler);
     });
 
-    this.client.send({
-      message: {
+    this.client.send(
+      new MoopsyRequest({
         event: MoopsyRawClientToServerMessageEventEnum.AUTH_LOGIN,
         data: params
-      },
-      requireAuth: false
-    });
+      }, false, false)
+    );
     
     return promise;
   };

@@ -68,6 +68,8 @@ export abstract class TransportBase {
     if(status === TransportStatus.connected) {
       this.connectedAt = new Date();
       this.failureCount = 0;
+
+      this.client.clearOutboxBeforeReconnection();
       void this.client.handleOutboxFlushRequest();
     }
   };

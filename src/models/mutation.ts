@@ -83,7 +83,7 @@ export class MoopsyMutation<Plug extends MoopsyBlueprintPlugType> {
     return mutationResult;
   };
 
-  public constructor(client: MoopsyClient, plug: MoopsyBlueprintConstsType, options: MoopsyMutationOptionsType) {
+  public constructor(client: MoopsyClient, plug: MoopsyBlueprintConstsType, options: MoopsyMutationOptionsType, public readonly isQuery: boolean) {
     this.client = client;
     this.plug = plug;
     this.querySideEffects = options.querySideEffects;

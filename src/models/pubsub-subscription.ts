@@ -2,6 +2,7 @@ import { MoopsyRawClientToServerMessageEventEnum, MoopsySubscribeToTopicEventDat
 import { MoopsyClient } from "./client";
 import { TransportStatus } from "./transports/base";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
+import { MoopsyRequest } from "./request";
 
 export class PubSubSubscription<Typing extends MoopsyTopicSpecTyping>{
   public destroyed: boolean = false;
@@ -39,13 +40,12 @@ export class PubSubSubscription<Typing extends MoopsyTopicSpecTyping>{
   public _subscribe = (): void => {
     this.client._debug(`[@MoopsyJS/React][${this.options.topic}] Creating a subscription`);
 
-    this.client.send({
-      message: {
+    this.client.send(
+      new MoopsyRequest({
         event: MoopsyRawClientToServerMessageEventEnum.SUBSCRIBE_TO_TOPIC,
         data: this.options
-      },
-      requireAuth: true // TODO, this should be dynamic but core needs to be updated
-    });
+      }, true, false)
+    );
 
     this.client.incomingMessageEmitter.once(`subscription-result.${this.options.topic}`, (data) => {
       if(data !== true && "error" in data) {
