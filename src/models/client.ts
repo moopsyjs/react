@@ -261,7 +261,10 @@ export class MoopsyClient {
   };
 
   public send = (params: MoopsyRequest) => {
-    this._debug("[send/requested] " + params.message.event + (params.message.event === "call" ? " " + params.message.data.method : ""));
+    if(params.message.event !== "call") {
+      this._debug("[send] " + params.message.event);
+    }
+    
     this.outbox.push(params);
   };
 

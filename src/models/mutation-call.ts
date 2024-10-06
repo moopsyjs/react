@@ -5,9 +5,10 @@ import { UseMoopsyQueryRetValBase } from "./client";
 import { isMoopsyError } from "../lib/is-moopsy-error";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
 import { MoopsyRequest } from "./request";
+import { TransportStatus } from "./transports/base";
 
 function generateMutationId (): string {
-  return Math.random().toString();
+  return Math.random().toString(32).slice(2).toLowerCase();
 }
 
 function determineSideEffects (querySideEffects?: Array<UseMoopsyQueryRetValBase<any> | null>): Array<MoopsyCallSideEffectType> {
@@ -20,7 +21,9 @@ function determineSideEffects (querySideEffects?: Array<UseMoopsyQueryRetValBase
     : [];
 }
 
-export class MutationCall<Plug extends MoopsyBlueprintPlugType>{
+const NO_RESPONSE = Symbol("NO_RESPONSE");
+
+export class MutationCall<Plug extends MoopsyBlueprintPlugType> {
   public readonly callId: string;
   private failed: boolean = false;
   private readonly emitter = new TypedEventEmitterV3<{
@@ -28,6 +31,7 @@ export class MutationCall<Plug extends MoopsyBlueprintPlugType>{
     error: MoopsyError
   }>();
   private _called: boolean = false;
+  private response: Plug["response"] | typeof NO_RESPONSE = NO_RESPONSE;
 
   public get called (): boolean {
     return this._called;
@@ -36,6 +40,10 @@ export class MutationCall<Plug extends MoopsyBlueprintPlugType>{
   private set called (value: boolean) {
     this._called = value;
   }
+
+  private readonly _debug = (...args: any[]): void => {
+    this.mutation.client._debug(`[MutationCall::${this.callId.slice(0,4)}]`, ...args);    
+  };
   
   public constructor(private readonly mutation: MoopsyMutation<Plug>) {
     this.callId = generateMutationId();
@@ -43,10 +51,13 @@ export class MutationCall<Plug extends MoopsyBlueprintPlugType>{
     this.mutation.client.incomingMessageEmitter.on(`response.${this.callId}`, (data: Plug["response"] | MoopsyError) => {
       if(!this.failed) {
         if(isMoopsyError(data)) {
+          this._debug(`Received error for ${this.mutation.plug.Endpoint}`, data);
           this.declareFailure(data);
         }
         else {
+          this._debug(`Received response for ${this.mutation.plug.Endpoint}`);
           this.emitter.emit("response", data);
+          this.response = data;
         }
       }
     });
@@ -63,6 +74,10 @@ export class MutationCall<Plug extends MoopsyBlueprintPlugType>{
   };
 
   public readonly awaitResult = (): Promise<Plug["response"] | MoopsyError> => {
+    if(this.response !== NO_RESPONSE) {
+      return Promise.resolve(this.response);
+    }
+
     return new Promise<Plug["response"]>((resolve) => {
       this.onSuccess(resolve);
       this.onFailure(resolve);
@@ -76,7 +91,9 @@ export class MutationCall<Plug extends MoopsyBlueprintPlugType>{
     this.emitter.emit("error", error);
   };
 
-  public readonly call = (params: Plug["params"]): typeof this => {
+  public readonly callMutation = async (params: Plug["params"]): Promise<
+    MutationCall<Plug>
+  > => {
     if(this.called) {
       throw new Error("MutationCall.call() was called more than once.");
     }
@@ -92,7 +109,15 @@ export class MutationCall<Plug extends MoopsyBlueprintPlugType>{
       sideEffects,
     };
 
+    if(this.mutation.client.getTransportStatus() !== TransportStatus.connected) {
+      this._debug("Transport is not connected, will await connection before sending");
+
+      await this.mutation.client.awaitConnected();
+    }
+
     const timeout = setTimeout(() => {
+      this._debug("Request timed out waiting for a response from the server");
+
       this.declareFailure(
         new TimeoutError(this.mutation.plug.Endpoint)
       );
@@ -107,6 +132,8 @@ export class MutationCall<Plug extends MoopsyBlueprintPlugType>{
 
     this.onSuccess(makeInactive);
     this.onFailure(makeInactive);
+
+    this._debug(`Sending call for ${this.mutation.plug.Endpoint}`);
 
     this.mutation.client.send(
       new MoopsyRequest({

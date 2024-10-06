@@ -51,7 +51,7 @@ export class MoopsyMutation<Plug extends MoopsyBlueprintPlugType> {
     this.activeCalls = [...this.activeCalls, { mutationId, startDate: new Date(), params }];
     this._fireChanged();
 
-    mutationCall.call(params);
+    await mutationCall.callMutation(params);
 
     const response = await mutationCall.awaitResult();
 
