@@ -63,13 +63,18 @@ export abstract class TransportBase {
 
   public readonly updateStatus = (status: TransportStatus): void => {
     this.v(`Updating status to: ${status}`);
+
+    if(status === TransportStatus.connected) {
+      // Clear the outbox before emitting status to prevent calls made as side-effects of status change getting cleared
+      this.client.clearOutboxBeforeReconnection();
+    }
+
     this.status = status;
     this.emit.statusChange(status);
     if(status === TransportStatus.connected) {
       this.connectedAt = new Date();
       this.failureCount = 0;
 
-      this.client.clearOutboxBeforeReconnection();
       void this.client.handleOutboxFlushRequest();
     }
   };
