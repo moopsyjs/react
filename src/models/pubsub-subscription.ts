@@ -1,4 +1,4 @@
-import { MoopsyRawClientToServerMessageEventEnum, MoopsySubscribeToTopicEventData, MoopsyTopicSpecTyping } from "@moopsyjs/core";
+import { MoopsyError, MoopsyRawClientToServerMessageEventEnum, MoopsySubscribeToTopicEventData, MoopsyTopicSpecTyping } from "@moopsyjs/core";
 import { MoopsyClient } from "./client";
 import { TransportStatus } from "./transports/base";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
@@ -21,30 +21,42 @@ export class PubSubSubscription<Typing extends MoopsyTopicSpecTyping>{
 
     this.client.on.transportStatusChange(this._handleTransportStatusChange);
     this.client.incomingMessageEmitter.on(`publication.${this.options.topic}`, this._handleIncomingMessage);
+    this.client.incomingMessageEmitter.on(`subscription-result.${this.options.topic}`, (data: true | { error: MoopsyError }) => {
+      if(data === true) {
+        this.client._debug(`[${this.options.topic}] Successfully subscribed`);
+      }
+      else {
+        this.client._debug(`[${this.options.topic}] Failed to subscribe`, data);
+      }
+    });
   }
 
   public _handleTransportStatusChange = (status: TransportStatus) => {
     if(status === TransportStatus.connected) {
-      this.client._debug(`[@MoopsyJS/React][${this.options.topic}] Transport connected, resubscribing to "${this.options.topic}"`);
+      this.client._debug(`[${this.options.topic}] Transport connected, resubscribing to "${this.options.topic}"`);
       // Resubscribe, as transport has been disconnected
       void this._subscribe();
     }
   };
 
   public _handleIncomingMessage = async (message: Typing["MessageType"]): Promise<void> => {
-    this.client._debug(`[@MoopsyJS/React][${this.options.topic}] PubSub received an incoming message for "${this.options.topic}"`);
+    this.client._debug(`[${this.options.topic}] PubSub received an incoming message for "${this.options.topic}"`);
 
     this._emitter.emit("received", message);
   };
 
   public _subscribe = (): void => {
-    this.client._debug(`[@MoopsyJS/React][${this.options.topic}] Creating a subscription`);
+    this.client._debug(`[${this.options.topic}] Creating a subscription`);
 
     this.client.send(
-      new MoopsyRequest({
-        event: MoopsyRawClientToServerMessageEventEnum.SUBSCRIBE_TO_TOPIC,
-        data: this.options
-      }, true, false)
+      new MoopsyRequest(
+        {
+          event: MoopsyRawClientToServerMessageEventEnum.SUBSCRIBE_TO_TOPIC,
+          data: this.options
+        },
+        true, // This should become a param but for now we require auth
+        false // We don't need this to survive reconnection as _handleTransportStatusChange() will trigger a new request in a reconnection event
+      )
     );
 
     this.client.incomingMessageEmitter.once(`subscription-result.${this.options.topic}`, (data) => {
@@ -73,10 +85,9 @@ export class PubSubSubscription<Typing extends MoopsyTopicSpecTyping>{
     let isActive = true;
     const wrappedCallback = (m: Typing["MessageType"]) => {
       if(isActive !== true) {
-        return console.warn("[@MoopsyJS/React] W54 - Listener callback called even though not active");
+        return console.warn("W54 - Listener callback called even though not active");
       }
       else {
-        this.client._debug(`[@MoopsyJS/React] Publishing event for "${this.options.topic}" to listener`);
         void fn(m);
       }
     };
