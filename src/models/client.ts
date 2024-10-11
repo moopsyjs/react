@@ -258,6 +258,7 @@ export class MoopsyClient {
    * Clears any requests from outbox that should not survive reconnection
    */
   public readonly clearOutboxBeforeReconnection = (): void => {
+    this._debug("Clearing outbox of any messages that should not survive reconnection");
     this.outbox.flush(
       req => req.surviveReconnection !== true
     );

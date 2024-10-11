@@ -71,6 +71,7 @@ export abstract class TransportBase {
 
     this.status = status;
     this.emit.statusChange(status);
+    
     if(status === TransportStatus.connected) {
       this.connectedAt = new Date();
       this.failureCount = 0;
