@@ -91,7 +91,7 @@ export class MoopsyClient {
     if(this.debug === true) {
       if(this._debugOutFn != null) {
         if(typeof args[0] !== "string" || !(args[0].includes("[received/raw") || args[0].includes("[pinged]") || args[0].includes("[_pinged]") || args[0].includes("[stabilityCheck]"))) {
-          this._debugOutFn(timestamp, "@moopsyjs/react", ...args, this.socketUrl);
+          this._debugOutFn(timestamp, "@moopsyjs/react", ...args);
         }
       }
       else {
