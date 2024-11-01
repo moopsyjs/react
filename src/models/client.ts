@@ -377,8 +377,9 @@ export class MoopsyClient {
     const paramsHash = React.useMemo(() => JSON.stringify(params), [params]);
     const [isLoading, setIsLoading] = React.useState<boolean>(true);
     const [data, setData] = React.useState<Plug["response"] | void>();
+    const [error, setError] = React.useState<null | MoopsyError>(null);
     const mutation = this.useStaticMutation<Plug>(MoopsyModule, true, options);
-    const { error, call } = this._useReactiveMutation(mutation);
+    const { call } = this._useReactiveMutation(mutation);
 
     const refresh = React.useCallback((opts?: MoopsyQueryRefreshOpts) => {
       if(opts?.subtle !== true) {
@@ -388,6 +389,9 @@ export class MoopsyClient {
       
       return call(params).then((d) => {
         setData(d);
+        setIsLoading(false);
+      }).catch((err) => {
+        setError(err);
         setIsLoading(false);
       });
     }, [params]);
