@@ -10,6 +10,7 @@ export class PubSubSubscription<Typing extends MoopsyTopicSpecTyping>{
   private client: MoopsyClient;
   private options: MoopsySubscribeToTopicEventData;
   private _emitter = new TypedEventEmitterV3<{ received: Typing["MessageType"] }>();
+  private listeners = new Set<((m: Typing["MessageType"]) => void)>();
 
   public constructor(client: MoopsyClient, options: MoopsySubscribeToTopicEventData) {
     this.client = client;
@@ -93,12 +94,18 @@ export class PubSubSubscription<Typing extends MoopsyTopicSpecTyping>{
     };
         
     this._emitter.on("received", wrappedCallback);
+    this.listeners.add(wrappedCallback);
 
     return {
       stop: () => {
         isActive = false;
         // TODO track list of listeners, if 0 listeners are registered "pause" the subscription, resuming if a new listener is added
         this._emitter.off("received", wrappedCallback);
+        this.listeners.delete(wrappedCallback);
+
+        if(this.listeners.size === 0) {
+          this.destroy();
+        }
       }
     };
   };
