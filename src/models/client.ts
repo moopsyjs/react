@@ -14,6 +14,7 @@ import { MutationCall } from "./mutation-call";
 import { HTTPTransport } from "./transports/http-transport";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
 import { UseMoopsyQueryRetValAny } from "..";
+import { requestIdleCallbackSafe } from "../lib/idle-callback";
 
 type MoopsyClientOpts = {
   socketUrl: string;
@@ -388,8 +389,15 @@ export class MoopsyClient {
       }
       
       return call(params).then((d) => {
-        setData(d);
-        setIsLoading(false);
+        /**
+         * Defer setting data to avoid interfering with any animations
+         * We wait up to 300ms, which should be enough time for any
+         * animations to run.
+         */
+        requestIdleCallbackSafe(() => {
+          setData(d);
+          setIsLoading(false);
+        }, 300);
       }).catch((err) => {
         setError(err);
         setIsLoading(false);
