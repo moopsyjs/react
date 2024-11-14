@@ -83,7 +83,7 @@ export class MoopsyMutation<Plug extends MoopsyBlueprintPlugType> {
     if(typeof mutationResult === "object" && mutationResult != null && (mutationResult as any) instanceof Object) {
       for(const [key, value] of Object.entries(mutationResult)) {
         if(typeof value === "object" && value instanceof Object && "__moopsyStream" in value) {
-          mutationResult[key] = new ReadableMoopsyStream(value.__moopsyStream, mutationCall, this.client);
+          mutationResult[key] = new ReadableMoopsyStream(value, mutationCall, this.client);
         }
       }
     }
