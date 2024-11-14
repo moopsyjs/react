@@ -1,6 +1,6 @@
 {
   "name": "@moopsyjs/react",
-  "version": "1.2.7",
+  "version": "1.3.0",
   "description": "",
   "main": "./main/index.js",
   "types": "./main/index.d.js",
@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@moopsyjs/core": "^1.0.1",
+    "@moopsyjs/core": "^1.1.0",
     "@types/ejson": "^2.2.0",
     "@types/events": "^3.0.0",
     "@types/react": "^18.0.17",

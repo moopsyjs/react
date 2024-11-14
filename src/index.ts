@@ -15,3 +15,4 @@ export { MoopsyMutation } from "./models/mutation";
 export { TimeoutError } from "./models/errors/timeout-error";
 export { NetworkError } from "./models/errors/network-error";
 export * from "./lib/is-moopsy-error";
+export type { ReadableMoopsyStream } from "./models/readable-moopsy-stream";

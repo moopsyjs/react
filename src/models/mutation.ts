@@ -4,6 +4,8 @@ import { TimeoutError } from "./errors/timeout-error";
 import { isMoopsyError } from "../lib/is-moopsy-error";
 import { MutationCall } from "./mutation-call";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
+import { ReplaceMoopsyStreamWithReadable } from "../types";
+import { ReadableMoopsyStream } from "./readable-moopsy-stream";
 
 export type ActiveCallType<Plug extends MoopsyBlueprintPlugType> = {
   mutationId:string,
@@ -41,7 +43,7 @@ export class MoopsyMutation<Plug extends MoopsyBlueprintPlugType> {
     this.changeEmitter.emit("changed", null);
   };
 
-  public call = async (params: Plug["params"]): Promise<Plug["response"]> => {
+  public call = async (params: Plug["params"]): Promise<ReplaceMoopsyStreamWithReadable<Plug["response"]>> => {
     this.loading = true;
     this.error = null;
 
@@ -74,6 +76,14 @@ export class MoopsyMutation<Plug extends MoopsyBlueprintPlugType> {
         const query = this.querySideEffects[sideEffectResult.sideEffectId];
         if(query) {
           query._.onSideEffectResult(sideEffectResult.result);
+        }
+      }
+    }
+
+    if(typeof mutationResult === "object" && mutationResult != null && (mutationResult as any) instanceof Object) {
+      for(const [key, value] of Object.values(mutationResult)) {
+        if(typeof value === "object" && value instanceof Object && "__moopsyStream" in value) {
+          mutationResult[key] = new ReadableMoopsyStream(value.__moopsyStream, mutationCall, this.client);
         }
       }
     }
