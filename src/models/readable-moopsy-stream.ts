@@ -10,8 +10,8 @@ export class ReadableMoopsyStream<T> {
     end: null
   }>();
 
-  public constructor (input:{__moopsyStream:string}, private readonly mutationCall: MutationCall<any>, private readonly client: MoopsyClient) {
-    this.id = input.__moopsyStream;
+  public constructor (input:{__moopsyStream:true, id: string}, private readonly mutationCall: MutationCall<any>, private readonly client: MoopsyClient) {
+    this.id = input.id;
 
     this.client.incomingMessageEmitter.on(`response.${mutationCall.callId}.${this.id}`, (data: {
       backlog: T[],
