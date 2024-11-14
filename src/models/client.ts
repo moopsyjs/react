@@ -15,6 +15,7 @@ import { HTTPTransport } from "./transports/http-transport";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
 import { UseMoopsyQueryRetValAny } from "..";
 import { requestIdleCallbackSafe } from "../lib/idle-callback";
+import { ReplaceMoopsyStreamWithReadable } from "../types";
 
 type MoopsyClientOpts = {
   socketUrl: string;
@@ -27,7 +28,7 @@ type MoopsyClientOpts = {
 export type UseMoopsyMutationRetVal<Plug extends MoopsyBlueprintPlugType> = {
   isLoading: boolean;
   error: null | MoopsyError;
-  call: (params:Plug["params"]) => Promise<Plug["response"]>;
+  call: (params:Plug["params"]) => Promise<ReplaceMoopsyStreamWithReadable<Plug["response"]>>;
   activeCalls: Array<ActiveCallType<any>>;
 }
 
