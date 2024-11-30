@@ -383,13 +383,15 @@ export class MoopsyClient {
     const mutation = this.useStaticMutation<Plug>(MoopsyModule, true, options);
     const { call } = this._useReactiveMutation(mutation);
 
-    const refresh = React.useCallback((opts?: MoopsyQueryRefreshOpts) => {
+    const refresh = React.useCallback(async (opts?: MoopsyQueryRefreshOpts) => {
       if(opts?.subtle !== true) {
         setIsLoading(true);
         setData(undefined);
       }
       
-      return call(params).then((d) => {
+      try {
+        const d = await call(params);
+
         /**
          * Defer setting data to avoid interfering with any animations
          * We wait up to 300ms, which should be enough time for any
@@ -399,10 +401,19 @@ export class MoopsyClient {
           setData(d);
           setIsLoading(false);
         }, 300);
-      }).catch((err) => {
-        setError(err);
+      }
+      catch (err) {
+        /**
+         * If the refresh is subtle, we don't save any errors to the state,
+         * instead throwing the error to the refresh() caller
+         */
+        if(opts?.subtle === true) {
+          throw err;
+        }
+
+        setError(err as any);
         setIsLoading(false);
-      });
+      }
     }, [params]);
 
     React.useEffect(() => {
