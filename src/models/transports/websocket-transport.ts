@@ -4,10 +4,9 @@ import { TransportBase, TransportStatus } from "./base";
 import { sanitizeBaseURL } from "../utils/sanitize-base-url";
 import { MoopsyClient } from "../client";
 import { MoopsyError } from "@moopsyjs/core";
-import { generateMutationId } from "../mutation";
 
 export class WebsocketTransport extends TransportBase {
-  type = "websocket" as const;
+  public type = "websocket" as const;
   private socket: Socket | null = null;
 
   public constructor (public readonly client: MoopsyClient, baseURL: string, onRequestSwitchTransport:(newTransport: "websocket" | "http") => void) {
@@ -54,7 +53,7 @@ export class WebsocketTransport extends TransportBase {
       throw new Error("connect() was called on a WebsocketTransport that has an active socket");
     }
 
-    const connectionId = generateMutationId();
+    const connectionId = this.client.generateId();
     this.connectionId = connectionId;
 
     const connectTimeout = setTimeout(() => {

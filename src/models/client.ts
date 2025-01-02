@@ -2,7 +2,7 @@ import EJSON from "ejson";
 
 import { MoopsyBlueprintConstsType, MoopsyBlueprintPlugType, MoopsyError, MoopsyPublishToTopicEventData, MoopsyRawClientToServerMessageEventEnum, MoopsyRawServerToClientMessageEventType, MoopsySubscribeToTopicEventData, MoopsyTopicSpecConstsType, MoopsyTopicSpecTyping } from "@moopsyjs/core";
 import React from "react";
-import { ActiveCallType, generateMutationId, MoopsyMutation } from "./mutation";
+import { ActiveCallType, MoopsyMutation } from "./mutation";
 import { MoopsyClientAuthExtension, AuthExtensionStatus } from "./client-extensions/auth-extension";
 import { PubSubSubscription } from "./pubsub-subscription";
 import type { Axios } from "axios";
@@ -85,6 +85,16 @@ export class MoopsyClient {
   public axios: Axios;
   public _closed: boolean = false;
   private readonly birthDate: number = Date.now();
+
+  private lastId: number = 0;
+  public readonly generateId = (): string => {
+    if(this.lastId >= Number.MAX_SAFE_INTEGER) {
+      console.error("MoopsyClient: lastId reached MAX_SAFE_INTEGER, resetting to 0");
+      this.lastId = 0;
+    }
+
+    return (++this.lastId).toString();
+  };
   
   
   public _debug = (...args:any[]) => {
@@ -375,7 +385,7 @@ export class MoopsyClient {
     params:Plug["params"],
     options?: UseMoopsyMutationOptionsType
   ) : UseMoopsyQueryRetVal<Plug> => {
-    const queryId = React.useMemo(() => generateMutationId(), []);
+    const queryId = React.useMemo(() => this.generateId(), []);
     const paramsHash = React.useMemo(() => JSON.stringify(params), [params]);
     const [isLoading, setIsLoading] = React.useState<boolean>(true);
     const [data, setData] = React.useState<Plug["response"] | void>();

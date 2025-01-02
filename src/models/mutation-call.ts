@@ -7,10 +7,6 @@ import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
 import { MoopsyRequest } from "./request";
 import { TransportStatus } from "./transports/base";
 
-function generateMutationId (): string {
-  return Math.random().toString(32).slice(2).toLowerCase();
-}
-
 function determineSideEffects (querySideEffects?: Array<UseMoopsyQueryRetValBase<any> | null>): Array<MoopsyCallSideEffectType> {
   return querySideEffects
     ? querySideEffects.filter((sideEffect): sideEffect is UseMoopsyQueryRetValBase<any> => sideEffect != null).map((query, index) => ({
@@ -46,7 +42,7 @@ export class MutationCall<Plug extends MoopsyBlueprintPlugType> {
   };
   
   public constructor(private readonly mutation: MoopsyMutation<Plug>) {
-    this.callId = generateMutationId();
+    this.callId = this.mutation.client.generateId();
 
     this.mutation.client.incomingMessageEmitter.on(`response.${this.callId}`, (data: Plug["response"] | MoopsyError) => {
       if(!this.failed) {

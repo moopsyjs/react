@@ -18,10 +18,6 @@ export type MoopsyMutationOptionsType = {
   timeout?: number,
 }
 
-export function generateMutationId (): string {
-  return Math.random().toString();
-}
-
 export class MutationError extends MoopsyError {
   public constructor(code: number, error: string, description: string, public source: string) {
     super(code, error, description);
