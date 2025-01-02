@@ -5,11 +5,11 @@ import { sanitizeBaseURL } from "../utils/sanitize-base-url";
 import { MoopsyClient } from "../client";
 import { MoopsyError } from "@moopsyjs/core";
 
-export class WebsocketTransport extends TransportBase {
+export class SocketIOComm extends TransportBase {
   public type = "websocket" as const;
   private socket: Socket | null = null;
 
-  public constructor (public readonly client: MoopsyClient, baseURL: string, onRequestSwitchTransport:(newTransport: "websocket" | "http") => void) {
+  public constructor (public readonly client: MoopsyClient, baseURL: string, onRequestSwitchTransport:(newTransport: "websocket" | "http" | "socketio") => void) {
     super(
       sanitizeBaseURL(baseURL),
       onRequestSwitchTransport
@@ -17,7 +17,7 @@ export class WebsocketTransport extends TransportBase {
   }
 
   public readonly v = (message: string): void => {
-    this.client._debug(`[WebsocketTransport] ${message}`);
+    this.client._debug(`[SocketIOComm] ${message}`);
   };
 
   private readonly failActiveCalls = (): void => {
@@ -49,8 +49,8 @@ export class WebsocketTransport extends TransportBase {
     }
 
     if(this.socket != null) {
-      this.v("connect() was called on a WebsocketTransport that has an active socket");
-      throw new Error("connect() was called on a WebsocketTransport that has an active socket");
+      this.v("connect() was called on a SocketIOComm that has an active socket");
+      throw new Error("connect() was called on a SocketIOComm that has an active socket");
     }
 
     const connectionId = this.client.generateId();

@@ -24,7 +24,7 @@ export abstract class TransportBase {
    * Disconnect any current connection, but preserve the transport
    */
   public abstract readonly disconnect: () => void;
-  public abstract readonly type: "websocket" | "http";
+  public abstract readonly type: "websocket" | "http" | "webtransport";
   public readonly baseURL: string;
 
   public readonly emitter = new EventEmitter();
@@ -38,7 +38,7 @@ export abstract class TransportBase {
 
   private stabilityCheckInterval: number | null = null;
 
-  public constructor(baseURL: string, private readonly onRequestSwitchTransport:(newTransport: "websocket" | "http") => void) {
+  public constructor(baseURL: string, public readonly onRequestSwitchTransport:(newTransport: "websocket" | "http" | "socketio") => void) {
     this.baseURL = baseURL;
   }
 

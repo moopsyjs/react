@@ -8,7 +8,7 @@ export {
 export { MoopsyClient, type UseMoopsyQueryRetVal, type UseMoopsyMutationRetVal, type UseMoopsyMutationOptionsType } from "./models/client";
 export type UseMoopsyQueryRetValAny = UseMoopsyQueryRetVal<any>;
 export type AnyMoopsyQuery = UseMoopsyQueryRetVal<any>;
-export type { WebsocketTransport } from "./models/transports/websocket-transport";
+export type { WebsocketComm } from "./models/transports/websocket-comm";
 export { TransportStatus } from "./models/transports/base";
 export type { PubSubSubscription } from "./models/pubsub-subscription";
 export { MoopsyMutation } from "./models/mutation";
