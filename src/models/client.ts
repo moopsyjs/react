@@ -17,6 +17,7 @@ import { UseMoopsyQueryRetValAny } from "..";
 import { requestIdleCallbackSafe } from "../lib/idle-callback";
 import { ReplaceMoopsyStreamWithReadable } from "../types";
 import { SocketIOComm } from "./transports/socketio-comm";
+import { useRerender } from "../lib/use-rerender";
 
 type MoopsyClientOpts = {
   socketUrl: string;
@@ -188,21 +189,17 @@ export class MoopsyClient {
 
   public readonly use = {
     transportStatus: () => {
-      const [status, setStatus] = React.useState<TransportStatus>(this.transport.status);
+      const rerender = useRerender();
 
       React.useEffect(() => {
-        const h = (status: TransportStatus) => {
-          setStatus(status);
-        };
-
-        this.on.transportStatusChange(h);
+        this.on.transportStatusChange(rerender);
 
         return () => {
-          this.off.transportStatusChange(h);
+          this.off.transportStatusChange(rerender);
         };
       }, []);
 
-      return status;
+      return this.transport.status;
     }
   };
 

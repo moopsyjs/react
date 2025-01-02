@@ -62,6 +62,8 @@ export abstract class TransportBase {
   };    
 
   public readonly updateStatus = (status: TransportStatus): void => {
+    if(this.terminated) return;
+
     this.v(`Updating status to: ${status}`);
 
     if(status === TransportStatus.connected) {
@@ -158,6 +160,7 @@ export abstract class TransportBase {
 
     this.stabilityCheckInterval = setInterval(() => {      
       if(this.lastPing.valueOf() < (Date.now() - 10000)) {
+        this.v(`Connection is unstable, last ping was ${Date.now() - this.lastPing.valueOf()}ms ago, declaring failure.`);
         this.handleConnectionFailure();
       }
       else {
