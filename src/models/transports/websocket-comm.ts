@@ -98,9 +98,9 @@ export class WebsocketComm extends TransportBase {
       }
     });
 
-    socket.addEventListener("close", () => {
+    socket.addEventListener("close", (event) => {
       clearTimeout(connectTimeout);
-      this.v("Socket closed.");
+      this.v(`Socket closed with code ${event.code} and reason ${event.reason}`);
 
       if(this.status === TransportStatus.disconnected) {
         return;
