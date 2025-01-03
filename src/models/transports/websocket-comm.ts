@@ -67,6 +67,7 @@ export class WebsocketComm extends TransportBase {
     
     const socketURL = new URL(this.baseURL, window.location.href);
     socketURL.pathname = "/moopsy_ws";
+    socketURL.protocol = socketURL.protocol === "http:" ? "ws:" : "wss:";
     
     this.v(`Connecting via websocket to: ${socketURL.toString()}...`);
 
