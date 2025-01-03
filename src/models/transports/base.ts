@@ -23,7 +23,7 @@ export abstract class TransportBase {
   /**
    * Disconnect any current connection, but preserve the transport
    */
-  public abstract readonly disconnect: () => void;
+  public abstract readonly disconnect: (code: number, reason: string) => void;
   public abstract readonly type: "websocket" | "http" | "webtransport";
   public readonly baseURL: string;
 
@@ -125,12 +125,12 @@ export abstract class TransportBase {
     void this.connect();
   };    
 
-  public readonly handleConnectionFailure = (): void => {
-    this.v("Connection failure detected.");
+  public readonly handleConnectionFailure = (reason: string): void => {
+    this.v("Connection failure detected: " + reason);
     this.failureCount++;
 
     if(this.status !== TransportStatus.disconnected) {
-      this.disconnect();
+      this.disconnect(3900, "connection-failure" + reason);
     }
 
     if(this.failureCount > 3 && this.type === "websocket") {
@@ -161,7 +161,7 @@ export abstract class TransportBase {
     this.stabilityCheckInterval = setInterval(() => {      
       if(this.lastPing.valueOf() < (Date.now() - 10000)) {
         this.v(`Connection is unstable, last ping was ${Date.now() - this.lastPing.valueOf()}ms ago, declaring failure.`);
-        this.handleConnectionFailure();
+        this.handleConnectionFailure("stability-check");
       }
       else {
         this.v(`Connection is stable, last ping was ${Date.now() - this.lastPing.valueOf()}ms ago.`);

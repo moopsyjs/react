@@ -27,13 +27,13 @@ export class WebsocketComm extends TransportBase {
     }
   };
 
-  public readonly disconnect = (): void => {
+  public readonly disconnect = (code: number, reason: string): void => {
     this.v("Disconnecting...");
 
     this.failActiveCalls();
     
     if(this.socket != null) {
-      this.socket.close();
+      this.socket.close(code, reason);
     }
 
     this.socket = null;
@@ -59,7 +59,7 @@ export class WebsocketComm extends TransportBase {
       if(this.connectionId === connectionId) {
         this.v("Connection attempt timed out.");
         this.reconnectPending = false;
-        this.handleConnectionFailure();
+        this.handleConnectionFailure("initial-connection-timeout");
       }
     }, 3500);
 
@@ -95,7 +95,7 @@ export class WebsocketComm extends TransportBase {
         this.onRequestSwitchTransport("socketio");
       }
       else {  
-        this.handleConnectionFailure();
+        this.handleConnectionFailure("socket-error");
       }
     });
 
@@ -107,7 +107,7 @@ export class WebsocketComm extends TransportBase {
         return;
       }
       
-      this.handleConnectionFailure();
+      this.handleConnectionFailure("remote-close");
     });   
     
     socket.addEventListener("message", v => {
@@ -126,7 +126,7 @@ export class WebsocketComm extends TransportBase {
   };
 
   public readonly terminate = (): void => {
-    this.disconnect();
+    this.disconnect(3901, "comm-termination");
     this.terminated = true;
   };
 }

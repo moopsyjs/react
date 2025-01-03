@@ -120,7 +120,7 @@ export class HTTPTransport extends TransportBase {
     }
     catch(e: any) {
       console.warn("Failed to establish HTTP connection via " + establishURL, "response" in e ? e.response : e);
-      this.handleConnectionFailure();
+      this.handleConnectionFailure("establish-failure");
     }
   };
 }

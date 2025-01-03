@@ -226,7 +226,7 @@ export class MoopsyClient {
 
   public close = (): void => {
     this._closed = true;
-    this.transport.disconnect();
+    this.transport.disconnect(3902, "client-closed");
   };
 
   public readonly activeCalls: Set<MutationCall<any>> = new Set();

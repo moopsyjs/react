@@ -60,7 +60,7 @@ export class SocketIOComm extends TransportBase {
       if(this.connectionId === connectionId) {
         this.v("Connection attempt timed out.");
         this.reconnectPending = false;
-        this.handleConnectionFailure();
+        this.handleConnectionFailure("initial-connection-timeout");
       }
     }, 3500);
 
@@ -94,7 +94,7 @@ export class SocketIOComm extends TransportBase {
       this.client.errorOutFn?.("Failed to connect via websocket", error);
 
       this.reconnectPending = false;
-      this.handleConnectionFailure();
+      this.handleConnectionFailure("connect_error");
     });
 
     socket.on("disconnect", () => {
@@ -103,7 +103,7 @@ export class SocketIOComm extends TransportBase {
         return;
       }
       
-      this.handleConnectionFailure();
+      this.handleConnectionFailure("disconnect");
     });   
     
     socket.on("message", this.handleIncomingMessage);
