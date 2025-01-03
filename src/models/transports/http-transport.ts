@@ -19,7 +19,7 @@ export class HTTPTransport extends TransportBase {
   public terminated: boolean = false;
   public status: TransportStatus = TransportStatus.disconnected;
 
-  public constructor (public readonly client: MoopsyClient, baseURL: string, onRequestSwitchTransport:(newTransport: "websocket" | "http" | "socketio") => void) {
+  public constructor (public readonly client: MoopsyClient, baseURL: string, onRequestSwitchTransport:(newTransport: "websocket" | "http") => void) {
     super(
       sanitizeBaseURL(baseURL),
       onRequestSwitchTransport

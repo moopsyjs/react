@@ -16,7 +16,6 @@ import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
 import { UseMoopsyQueryRetValAny } from "..";
 import { requestIdleCallbackSafe } from "../lib/idle-callback";
 import { ReplaceMoopsyStreamWithReadable } from "../types";
-import { SocketIOComm } from "./transports/socketio-comm";
 import { useRerender } from "../lib/use-rerender";
 
 type MoopsyClientOpts = {
@@ -141,7 +140,7 @@ export class MoopsyClient {
     this.setupTransport(this.transport);
   }
 
-  private readonly onRequestSwitchTransport = (newTransport: "websocket" | "http" | "socketio") => {
+  private readonly onRequestSwitchTransport = (newTransport: "websocket" | "http") => {
     if(newTransport === "http") {
       this._debug("[Moopsy] Switching to HTTP transport...");
       const transport = this.transport = new HTTPTransport(this, this.socketUrl, this.onRequestSwitchTransport);
@@ -150,12 +149,6 @@ export class MoopsyClient {
     } else if(newTransport === "websocket") {
       this._debug("[Moopsy] Switching to Websocket transport...");
       const transport = this.transport = new WebsocketComm(this, this.socketUrl, this.onRequestSwitchTransport);
-      this.transport.connect();
-      this.setupTransport(transport);
-    }
-    else if(newTransport === "socketio") {
-      this._debug("[Moopsy] Switching to SocketIO transport...");
-      const transport = this.transport = new SocketIOComm(this, this.socketUrl, this.onRequestSwitchTransport);
       this.transport.connect();
       this.setupTransport(transport);
     }

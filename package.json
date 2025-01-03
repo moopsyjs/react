@@ -1,6 +1,6 @@
 {
   "name": "@moopsyjs/react",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "",
   "main": "./main/index.js",
   "types": "./main/index.d.js",

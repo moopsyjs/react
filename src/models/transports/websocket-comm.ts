@@ -8,7 +8,7 @@ export class WebsocketComm extends TransportBase {
   private socket: WebSocket | null = null;
   private hasConnectedBefore: boolean = false;
 
-  public constructor (public readonly client: MoopsyClient, baseURL: string, onRequestSwitchTransport:(newTransport: "websocket" | "http" | "socketio") => void) {
+  public constructor (public readonly client: MoopsyClient, baseURL: string, onRequestSwitchTransport:(newTransport: "websocket" | "http") => void) {
     super(
       sanitizeBaseURL(baseURL),
       onRequestSwitchTransport
@@ -74,6 +74,10 @@ export class WebsocketComm extends TransportBase {
     const socket = new WebSocket(socketURL);
 
     socket.addEventListener("open", () => {
+      if(socket !== this.socket) {
+        return; // Socket replaced
+      }
+
       clearTimeout(connectTimeout);
       this.hasConnectedBefore = true;
       this.v("Connected via websocket.");
@@ -85,21 +89,23 @@ export class WebsocketComm extends TransportBase {
     });
 
     socket.addEventListener("error", (event) => {
+      if(socket !== this.socket) {
+        return; // Socket replaced
+      }
+
       clearTimeout(connectTimeout);
       this.v(`Failed to connect via websocket: ${event.type}`);
 
       this.reconnectPending = false;
 
-      if(!this.hasConnectedBefore) {
-        this.terminate();
-        this.onRequestSwitchTransport("socketio");
-      }
-      else {  
-        this.handleConnectionFailure("socket-error");
-      }
+      this.handleConnectionFailure("socket-error");
     });
 
     socket.addEventListener("close", (event) => {
+      if(socket !== this.socket) {
+        return; // Socket replaced
+      }
+
       clearTimeout(connectTimeout);
       this.v(`Socket closed with code ${event.code} and reason ${event.reason}`);
 

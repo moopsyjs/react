@@ -38,7 +38,7 @@ export abstract class TransportBase {
 
   private stabilityCheckInterval: number | null = null;
 
-  public constructor(baseURL: string, public readonly onRequestSwitchTransport:(newTransport: "websocket" | "http" | "socketio") => void) {
+  public constructor(baseURL: string, public readonly onRequestSwitchTransport:(newTransport: "websocket" | "http") => void) {
     this.baseURL = baseURL;
   }
 
