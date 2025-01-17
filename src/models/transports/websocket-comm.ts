@@ -2,6 +2,7 @@ import { TransportBase, TransportStatus } from "./base";
 import { sanitizeBaseURL } from "../utils/sanitize-base-url";
 import { MoopsyClient } from "../client";
 import { MoopsyError } from "@moopsyjs/core";
+import { getWebsocketURL } from "../../lib/url-polyfill";
 
 export class WebsocketComm extends TransportBase {
   public type = "websocket" as const;
@@ -65,9 +66,7 @@ export class WebsocketComm extends TransportBase {
 
     this.updateStatus(TransportStatus.connecting);
     
-    const socketURL = new URL(this.baseURL, window.location.href);
-    socketURL.pathname = "/moopsy_ws";
-    socketURL.protocol = socketURL.protocol === "http:" ? "ws:" : "wss:";
+    const socketURL = getWebsocketURL(this.baseURL);
     
     this.v(`Connecting via websocket to: ${socketURL.toString()}...`);
 
