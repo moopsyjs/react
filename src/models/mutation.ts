@@ -6,6 +6,7 @@ import { MutationCall } from "./mutation-call";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
 import { ReplaceMoopsyStreamWithReadable } from "../types";
 import { ReadableMoopsyStream } from "./readable-moopsy-stream";
+import { InvariantError } from "./error";
 
 export type ActiveCallType<Plug extends MoopsyBlueprintPlugType> = {
   mutationId:string,
@@ -66,6 +67,14 @@ export class MoopsyMutation<Plug extends MoopsyBlueprintPlugType> {
     }
 
     const mutationResult: Plug["response"] = response.mutationResult;
+
+    if(response == null) {
+      throw new InvariantError("Mutation response is null");
+    }
+
+    if(!Array.isArray(response.sideEffectResults)) {
+      throw new InvariantError("Mutation response sideEffectResults is not an array");
+    }
 
     for(const sideEffectResult of response.sideEffectResults) {
       if(typeof sideEffectResult.sideEffectId === "number") {

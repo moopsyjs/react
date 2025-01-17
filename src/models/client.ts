@@ -311,7 +311,19 @@ export class MoopsyClient {
         throw new Error("QuerySideEffect._ is nullish");
       }
     }
-  };  
+  };
+
+  public readonly createMutation = <Plug extends MoopsyBlueprintPlugType>(plug: MoopsyBlueprintConstsType, isQuery: boolean, options?:UseMoopsyMutationOptionsType): MoopsyMutation<Plug> => {
+    return new MoopsyMutation<Plug>(
+      this,
+      plug,
+      {
+        querySideEffects: options?.querySideEffects ?? [],
+        timeout: options?.timeout ?? 10000
+      },
+      isQuery
+    );
+  };
 
   /**
    * Returns a MoopsyMutation class instance
@@ -320,15 +332,7 @@ export class MoopsyClient {
     this.validatePlug(plug);
 
     const ref = React.useRef(
-      new MoopsyMutation<Plug>(
-        this,
-        plug,
-        {
-          querySideEffects: options?.querySideEffects ?? [],
-          timeout: options?.timeout ?? 10000
-        },
-        isQuery
-      )
+      this.createMutation<Plug>(plug, isQuery, options)
     );
 
     React.useEffect(() => {
