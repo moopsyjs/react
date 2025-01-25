@@ -11,7 +11,6 @@ import { MoopsyRequest } from "./request";
 import { Queue } from "../lib/queue";
 import { TransportBase, TransportStatus } from "./transports/base";
 import { MutationCall } from "./mutation-call";
-import { HTTPTransport } from "./transports/http-transport";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
 import { UseMoopsyQueryRetValAny } from "..";
 import { requestIdleCallbackSafe } from "../lib/idle-callback";
@@ -121,7 +120,7 @@ export class MoopsyClient {
 
     this._debug("[Moopsy] MoopsyClient Constructing...");
 
-    this.transport = new WebsocketComm(this, opts.socketUrl, this.onRequestSwitchTransport); //new RestTransport(this, opts.socketUrl, opts.axios)
+    this.transport = new WebsocketComm(this, opts.socketUrl); //new RestTransport(this, opts.socketUrl, opts.axios)
     this.transport.connect();
     
     this.errorOutFn = opts.errorOutFn ?? null;
@@ -139,20 +138,6 @@ export class MoopsyClient {
 
     this.setupTransport(this.transport);
   }
-
-  private readonly onRequestSwitchTransport = (newTransport: "websocket" | "http") => {
-    if(newTransport === "http") {
-      this._debug("[Moopsy] Switching to HTTP transport...");
-      const transport = this.transport = new HTTPTransport(this, this.socketUrl, this.onRequestSwitchTransport);
-      this.transport.connect();
-      this.setupTransport(transport);
-    } else if(newTransport === "websocket") {
-      this._debug("[Moopsy] Switching to Websocket transport...");
-      const transport = this.transport = new WebsocketComm(this, this.socketUrl, this.onRequestSwitchTransport);
-      this.transport.connect();
-      this.setupTransport(transport);
-    }
-  };
 
   private readonly setupTransport = (transport: TransportBase): void => {
     transport.on.statusChange((status) => {

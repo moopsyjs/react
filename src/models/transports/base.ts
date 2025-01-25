@@ -38,7 +38,7 @@ export abstract class TransportBase {
 
   private stabilityCheckInterval: number | null = null;
 
-  public constructor(baseURL: string, public readonly onRequestSwitchTransport:(newTransport: "websocket" | "http") => void) {
+  public constructor(baseURL: string) {
     this.baseURL = baseURL;
   }
 
@@ -133,14 +133,7 @@ export abstract class TransportBase {
       this.disconnect(3900, "connection-failure" + reason);
     }
 
-    if(this.failureCount > 3 && this.type === "websocket") {
-      // Terminate this Websocket Transport and switch to HTTP
-      this.terminate();
-      this.onRequestSwitchTransport("http");
-    }
-    else {
-      void this.requestReconnect();
-    }
+    void this.requestReconnect();
   };
 
   public readonly stopStabilityCheckInterval = (): void => {

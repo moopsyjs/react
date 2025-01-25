@@ -9,10 +9,9 @@ export class WebsocketComm extends TransportBase {
   private socket: WebSocket | null = null;
   private hasConnectedBefore: boolean = false;
 
-  public constructor (public readonly client: MoopsyClient, baseURL: string, onRequestSwitchTransport:(newTransport: "websocket" | "http") => void) {
+  public constructor (public readonly client: MoopsyClient, baseURL: string) {
     super(
-      sanitizeBaseURL(baseURL),
-      onRequestSwitchTransport
+      sanitizeBaseURL(baseURL)
     );
   }
 
