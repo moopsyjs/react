@@ -152,14 +152,18 @@ export abstract class TransportBase {
     }
 
     this.stabilityCheckInterval = setInterval(() => {      
-      if(this.lastPing.valueOf() < (Date.now() - 10000)) {
+      if(this.lastPing.valueOf() < (Date.now() - 7500)) {
         this.v(`Connection is unstable, last ping was ${Date.now() - this.lastPing.valueOf()}ms ago, declaring failure.`);
         this.handleConnectionFailure("stability-check");
       }
       else {
         this.v(`Connection is stable, last ping was ${Date.now() - this.lastPing.valueOf()}ms ago.`);
       }
-    }, 5000);
+
+      this.send(
+        EJSON.stringify({ event: "ping" })
+      );
+    }, 3000);
   };
 
   public readonly awaitConnected = () => {

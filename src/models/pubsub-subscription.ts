@@ -65,6 +65,9 @@ export class PubSubSubscription<Typing extends MoopsyTopicSpecTyping>{
         console.warn(`[@MoopsyJS/React][${this.options.topic}] Subscription failed, self-destructing`, this.options, data);
         this.destroy();
       }
+      else {
+        this.client._debug(`[@MoopsyJS/React][${this.options.topic}] Subscription successful`);
+      }
     });
   };
 
