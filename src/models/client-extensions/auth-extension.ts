@@ -5,7 +5,7 @@ import React from "react";
 import { createTimeout } from "../../lib/timeout";
 import { TimeoutError } from "../errors/timeout-error";
 import { isMoopsyError } from "../../lib/is-moopsy-error";
-import { TransportStatus } from "../transports/base";
+import { TransportStatus } from "../comms/websocket-comm";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
 import { MoopsyRequest } from "../request";
 

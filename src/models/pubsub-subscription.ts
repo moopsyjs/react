@@ -1,6 +1,6 @@
 import { MoopsyError, MoopsyRawClientToServerMessageEventEnum, MoopsySubscribeToTopicEventData, MoopsyTopicSpecTyping } from "@moopsyjs/core";
 import { MoopsyClient } from "./client";
-import { TransportStatus } from "./transports/base";
+import { TransportStatus } from "./comms/websocket-comm";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
 import { MoopsyRequest } from "./request";
 

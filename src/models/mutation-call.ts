@@ -5,7 +5,7 @@ import { UseMoopsyQueryRetValBase } from "./client";
 import { isMoopsyError } from "../lib/is-moopsy-error";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
 import { MoopsyRequest } from "./request";
-import { TransportStatus } from "./transports/base";
+import { TransportStatus } from "./comms/websocket-comm";
 
 function determineSideEffects (querySideEffects?: Array<UseMoopsyQueryRetValBase<any> | null>): Array<MoopsyCallSideEffectType> {
   return querySideEffects

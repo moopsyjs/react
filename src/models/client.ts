@@ -6,10 +6,9 @@ import { ActiveCallType, MoopsyMutation } from "./mutation";
 import { MoopsyClientAuthExtension, AuthExtensionStatus } from "./client-extensions/auth-extension";
 import { PubSubSubscription } from "./pubsub-subscription";
 import type { Axios } from "axios";
-import { WebsocketComm } from "./transports/websocket-comm";
+import { TransportStatus, WebsocketComm } from "./comms/websocket-comm";
 import { MoopsyRequest } from "./request";
 import { Queue } from "../lib/queue";
-import { TransportBase, TransportStatus } from "./transports/base";
 import { MutationCall } from "./mutation-call";
 import { TypedEventEmitterV3 } from "@moopsyjs/toolkit";
 import { UseMoopsyQueryRetValAny } from "..";
@@ -70,7 +69,7 @@ export type UseMoopsyMutationOptionsType = {
 }
 
 export class MoopsyClient {
-  private transport: TransportBase;
+  private transport: WebsocketComm;
   private pubsubSubscriptions: {[k: string]: PubSubSubscription<any>} = {};
   private activeQueries: {[k: string]: UseMoopsyQueryRetValAny} = {};
 
@@ -139,7 +138,7 @@ export class MoopsyClient {
     this.setupTransport(this.transport);
   }
 
-  private readonly setupTransport = (transport: TransportBase): void => {
+  private readonly setupTransport = (transport: WebsocketComm): void => {
     transport.on.statusChange((status) => {
       this._emitter.emit("transport/status-change", status);
     });

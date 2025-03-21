@@ -1,9 +1,11 @@
-/* eslint-disable no-constant-condition */
-import EJSON from "ejson";
-import { EventEmitter } from "events";
-import { MoopsyRawServerToClientMessageType } from "@moopsyjs/core";
-import { MoopsyClient } from "../client";
 import React from "react";
+import EJSON from "ejson";
+
+import { sanitizeBaseURL } from "../utils/sanitize-base-url";
+import { MoopsyClient } from "../client";
+import { MoopsyError, MoopsyRawServerToClientMessageType } from "@moopsyjs/core";
+import { getWebsocketURL } from "../../lib/url-polyfill";
+import { EventEmitter } from "events";
 
 export enum TransportStatus {
   disconnected = "disconnected",
@@ -11,23 +13,10 @@ export enum TransportStatus {
   connected = "connected"
 }
 
-export abstract class TransportBase {
-  public abstract readonly connect: () => void;
-  public abstract readonly send: (message: string) => void;
-  /**
-   * Terminate the transport, cleanup, block any further requests
-   */
-  public abstract readonly terminate: () => void;
-  public abstract readonly v: (message: string) => void;
-  public abstract readonly client: MoopsyClient;
-  /**
-   * Disconnect any current connection, but preserve the transport
-   */
-  public abstract readonly disconnect: (code: number, reason: string) => void;
-  public abstract readonly type: "websocket" | "http" | "webtransport";
-  public readonly baseURL: string;
-
-  public readonly emitter = new EventEmitter();
+export class WebsocketComm {
+  public type = "websocket" as const;
+  private socket: WebSocket | null = null;
+  private hasConnectedBefore: boolean = false;
   public lastPing: Date = new Date();
   public status: TransportStatus = TransportStatus.disconnected;
   public connectedAt: Date | null = null;
@@ -35,11 +24,13 @@ export abstract class TransportBase {
   public reconnectPending: boolean = false;
   public terminated: boolean = false;
   public lastReconnectAttempt: Date | null = null;
-
   private stabilityCheckInterval: number | null = null;
+  public readonly baseURL: string;
+  public readonly emitter = new EventEmitter();
 
-  public constructor(baseURL: string) {
-    this.baseURL = baseURL;
+
+  public constructor (public readonly client: MoopsyClient, baseURL: string) {
+    this.baseURL = sanitizeBaseURL(baseURL);
   }
 
   public readonly emit = {
@@ -90,6 +81,13 @@ export abstract class TransportBase {
     this.pinged();
     const data: MoopsyRawServerToClientMessageType = EJSON.parse(incoming);
     this.client.incomingMessageEmitter.emit(data.event, data.data);
+
+    if(data.event === "ping") {
+      this.v("Received pong");
+      this.send(
+        EJSON.stringify({ event: "pong" })
+      );
+    }
   };    
 
   public readonly requestReconnect = async (): Promise<void> => {
@@ -105,6 +103,7 @@ export abstract class TransportBase {
     this.reconnectPending = true;
     this.lastReconnectAttempt = new Date();
 
+    // eslint-disable-next-line no-constant-condition
     while(true) {
       try {
         const { data } = await this.client.axios.get(`${this.baseURL}/api/status`);
@@ -202,6 +201,124 @@ export abstract class TransportBase {
 
   public readonly useIsConnected = (): boolean => {
     return this.useStatus() === TransportStatus.connected;
-  };  
-}
+  };    
 
+  public readonly v = (message: string): void => {
+    this.client._debug(`[WebsocketComm] ${message}`);
+  };
+
+  private readonly failActiveCalls = (): void => {
+    for(const call of this.client.activeCalls) {
+      call.declareFailure(
+        new MoopsyError(1, "Connection Interrupted")
+      );
+    }
+  };
+
+  public readonly disconnect = (code: number, reason: string): void => {
+    this.v("Disconnecting...");
+
+    this.failActiveCalls();
+    
+    if(this.socket != null) {
+      this.socket.close(code, reason);
+    }
+
+    this.socket = null;
+    this.updateStatus(TransportStatus.disconnected);
+    this.stopStabilityCheckInterval();
+  };
+
+  public connectionId: string | null = null;
+  public readonly connect = (): void => {
+    if(this.status === TransportStatus.connected) {
+      return this.v("Not connect()'ing as already connected");
+    }
+
+    if(this.socket != null) {
+      this.v("connect() was called on a WebsocketComm that has an active socket");
+      throw new Error("connect() was called on a WebsocketComm that has an active socket");
+    }
+
+    const connectionId = this.client.generateId();
+    this.connectionId = connectionId;
+
+    const connectTimeout = setTimeout(() => {
+      if(this.connectionId === connectionId) {
+        this.v("Connection attempt timed out.");
+        this.reconnectPending = false;
+        this.handleConnectionFailure("initial-connection-timeout");
+      }
+    }, 3500);
+
+    this.updateStatus(TransportStatus.connecting);
+    
+    const socketURL = getWebsocketURL(this.baseURL);
+    
+    this.v(`Connecting via websocket to: ${socketURL.toString()}...`);
+
+    const socket = new WebSocket(socketURL);
+
+    socket.addEventListener("open", () => {
+      if(socket !== this.socket) {
+        return; // Socket replaced
+      }
+
+      clearTimeout(connectTimeout);
+      this.hasConnectedBefore = true;
+      this.v("Connected via websocket.");
+
+      this.reconnectPending = false;
+      this.updateStatus(TransportStatus.connected);
+      this.pinged();
+      this.kickoffStabilityCheckInterval();
+    });
+
+    socket.addEventListener("error", (event) => {
+      if(socket !== this.socket) {
+        return; // Socket replaced
+      }
+
+      clearTimeout(connectTimeout);
+      this.v(`Failed to connect via websocket: ${event.type}`);
+
+      this.reconnectPending = false;
+
+      this.handleConnectionFailure("socket-error");
+    });
+
+    socket.addEventListener("close", (event) => {
+      if(socket !== this.socket) {
+        return; // Socket replaced
+      }
+
+      clearTimeout(connectTimeout);
+      this.v(`Socket closed with code ${event.code} and reason ${event.reason}`);
+
+      if(this.status === TransportStatus.disconnected) {
+        return;
+      }
+      
+      this.handleConnectionFailure("remote-close");
+    });   
+    
+    socket.addEventListener("message", v => {
+      this.handleIncomingMessage(v.data);
+    });
+
+    this.socket = socket;
+  };
+
+  public readonly send = (message: string): void => {
+    if(this.socket == null) {
+      throw new Error("Websocket is null");
+    }
+
+    this.socket.send(message);
+  };
+
+  public readonly terminate = (): void => {
+    this.disconnect(3901, "comm-termination");
+    this.terminated = true;
+  };
+}
