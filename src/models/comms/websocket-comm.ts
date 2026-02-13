@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import EJSON from "ejson";
 
 import { sanitizeBaseURL } from "../utils/sanitize-base-url";
