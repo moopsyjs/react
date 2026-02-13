@@ -13,7 +13,7 @@ export function requestIdleCallbackSafe(
         timeRemaining: () => Math.max(0, ms - Date.now()),
       };
       fn(deadline);
-    }, ms) as number;
+    }, ms) as any as number;
   }
 }
 
