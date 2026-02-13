@@ -162,7 +162,7 @@ export class WebsocketComm {
       this.send(
         EJSON.stringify({ event: "ping" })
       );
-    }, 3000);
+    }, 3000) as any as number;
   };
 
   public readonly awaitConnected = () => {
