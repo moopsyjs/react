@@ -1,7 +1,7 @@
 import EJSON from "ejson";
 
 import { MoopsyBlueprintConstsType, MoopsyBlueprintPlugType, MoopsyError, MoopsyPublishToTopicEventData, MoopsyRawClientToServerMessageEventEnum, MoopsyRawServerToClientMessageEventType, MoopsySubscribeToTopicEventData, MoopsyTopicSpecConstsType, MoopsyTopicSpecTyping } from "@moopsyjs/core";
-import React from "react";
+import * as React from "react";
 import { ActiveCallType, MoopsyMutation } from "./mutation";
 import { MoopsyClientAuthExtension, AuthExtensionStatus } from "./client-extensions/auth-extension";
 import { PubSubSubscription } from "./pubsub-subscription";
