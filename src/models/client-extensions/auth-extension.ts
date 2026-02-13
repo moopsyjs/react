@@ -1,7 +1,7 @@
 import { MoopsyAuthenticationSpec, MoopsyError, MoopsyRawClientToServerMessageEventEnum, MoopsyRawServerToClientMessageEventEnum } from "@moopsyjs/core";
 import { MoopsyClient } from "../client";
 import { MoopsyClientExtensionBase } from "./base";
-import React from "react";
+import * as React from "react";
 import { createTimeout } from "../../lib/timeout";
 import { TimeoutError } from "../errors/timeout-error";
 import { isMoopsyError } from "../../lib/is-moopsy-error";
